@@ -1,8 +1,8 @@
 <div align='center'>
+    <img height=100 src="https://raw.githubusercontent.com/baseplate-admin/chithi/main/assets/logo.svg"/>
     <h1> Chithi ( চিঠি ) </h1>
 </div>
 
-<img height=100 src="https://raw.githubusercontent.com/baseplate-admin/chithi/main/assets/logo.svg"/>
 
 
 <h3 align="center">

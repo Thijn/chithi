@@ -16,6 +16,9 @@ const jetbrainsMono = JetBrains_Mono({
 export const metadata: Metadata = {
 	title: "Chithi - Secure File Sharing",
 	description: "Self-hostable, encrypted file sharing for humans.",
+	icons: {
+ 		icon: '/favicon.svg',
+ 	},
 };
 
 export default function RootLayout({
@@ -24,7 +27,10 @@ export default function RootLayout({
 	children: React.ReactNode;
 }>) {
 	return (
-		<html lang="en" data-theme="nouveau">
+		<html lang="en">
+			<head>
+				<link rel="icon" href="/favicon.svg" />
+			</head>
 			<body
 				className={`${inter.variable} ${jetbrainsMono.variable} antialiased`}
 			>

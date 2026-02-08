@@ -2,14 +2,6 @@
     <h1> Chithi ( চিঠি ) </h1>
 </div>
 
-<div align='center'>
-    <img alt="GitHub License" src="https://img.shields.io/github/license/baseplate-admin/chithi?style=for-the-badge&color=FF7F50">
-    <img alt="GitHub Issues or Pull Requests" src="https://img.shields.io/github/issues-closed/baseplate-admin/chithi?style=for-the-badge&color=FF7F50">
-    <img alt="GitHub repo size" src="https://img.shields.io/github/repo-size/baseplate-admin/chithi?style=for-the-badge&color=FF7F50">
-</div>
-
-## Important Links:
-
 
 <h3 align="center">
   <a href="https://docs.chithi.dev">Documentation</a>
@@ -18,6 +10,15 @@
   <span> · </span>
   <a href="https://public.chithi.dev">Public Instances</a>
 </h3>
+
+
+<div align='center'>
+    <img alt="GitHub License" src="https://img.shields.io/github/license/baseplate-admin/chithi?style=for-the-badge&color=FF7F50">
+    <img alt="GitHub Issues or Pull Requests" src="https://img.shields.io/github/issues-closed/baseplate-admin/chithi?style=for-the-badge&color=FF7F50">
+    <img alt="GitHub repo size" src="https://img.shields.io/github/repo-size/baseplate-admin/chithi?style=for-the-badge&color=FF7F50">
+</div>
+
+---
 
 ## Contributing
 

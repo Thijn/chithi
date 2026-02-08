@@ -10,9 +10,14 @@
 
 ## Important Links:
 
-* Documentation: https://docs.chithi.dev
-* Landing Page: https://landing.chithi.dev
-* Public Instances: https://public.chithi.dev
+
+<h3 align="center">
+  <a href="https://docs.chithi.dev">Documentation</a>
+  <span> · </span>
+  <a href="https://landing.chithi.dev">Landing Page</a>
+  <span> · </span>
+  <a href="https://public.chithi.dev">Public Instances</a>
+</h3>
 
 ## Contributing
 

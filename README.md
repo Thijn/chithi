@@ -18,7 +18,6 @@
     <img alt="GitHub repo size" src="https://img.shields.io/github/repo-size/baseplate-admin/chithi?style=for-the-badge&color=FF7F50">
 </div>
 
----
 
 ## Contributing
 

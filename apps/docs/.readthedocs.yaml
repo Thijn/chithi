@@ -11,15 +11,15 @@ build:
             - asdf global uv latest
 
         create_environment:
-            - cd tracker/docs && uv venv
+            - cd apps/docs && uv venv
 
         install:
-            - cd tracker/docs && uv sync
+            - cd apps/docs && uv sync
 
         build:
             html:
-                - cd tracker/docs && uv run zensical build --clean
+                - cd apps/docs && uv run zensical build --clean
 
         post_build:
             - mkdir -p $READTHEDOCS_OUTPUT/html/
-            - cd tracker/docs && cp --recursive site/* $READTHEDOCS_OUTPUT/html/
+            - cd apps/docs && cp --recursive site/* $READTHEDOCS_OUTPUT/html/

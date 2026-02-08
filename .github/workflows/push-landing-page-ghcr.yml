@@ -41,8 +41,8 @@ jobs:
           file: ./apps/landing-page/Dockerfile
           push: true
           tags: |
-            ghcr.io/${{ github.repository_owner }}/landing-page:latest
-            ghcr.io/${{ github.repository_owner }}/landing-page:${{ github.sha }}
-            ghcr.io/${{ github.repository_owner }}/landing-page:${{ github.ref_name }}
+            ghcr.io/${{ github.repository }}-${{ github.repository_owner }}/landing-page:latest
+            ghcr.io/${{ github.repository }}-${{ github.repository_owner }}/landing-page:${{ github.sha }}
+            ghcr.io/${{ github.repository }}-${{ github.repository_owner }}/landing-page:${{ github.ref_name }}
           cache-from: type=gha
           cache-to: type=gha,mode=max

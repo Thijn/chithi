@@ -8,6 +8,11 @@
     <img alt="GitHub repo size" src="https://img.shields.io/github/repo-size/baseplate-admin/chithi?style=for-the-badge&color=FF7F50">
 </div>
 
+## Important Links:
+
+* Documentation: https://docs.chithi.dev
+* Landing Page: https://landing.chithi.dev
+* Public Instances: https://public.chithi.dev
 
 ## Contributing
 

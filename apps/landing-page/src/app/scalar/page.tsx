@@ -7,7 +7,7 @@ export default function References() {
   return (
     <ApiReferenceReact
       configuration={{
-        content:openapi
+        content: openapi
       }}
     />
   )

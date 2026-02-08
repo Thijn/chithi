@@ -138,18 +138,6 @@ export default function Home() {
 
                     <div className="flex items-center gap-6 font-medium text-xs tracking-wide">
                         <a
-                            href="https://public.chithi.dev"
-                            className="transition-colors hover:text-white"
-                        >
-                            PUBLIC_INSTANCES
-                        </a>
-                        <a
-                            href="https://docs.chithi.dev"
-                            className="transition-colors hover:text-white"
-                        >
-                            DOCS
-                        </a>
-                        <a
                             href="https://github.com/chithi-dev/chithi"
                             className="flex items-center gap-2 text-white"
                         >

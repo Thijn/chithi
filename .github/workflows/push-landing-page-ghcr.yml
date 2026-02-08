@@ -8,6 +8,10 @@ on:
             - '.github/workflows/push-landing-page-ghcr.yml'
     workflow_dispatch:
 
+concurrency:
+  group: push-landing-page-ghcr
+  cancel-in-progress: false
+
 permissions:
   contents: read
   packages: write

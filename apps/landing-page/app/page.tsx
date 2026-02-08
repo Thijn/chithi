@@ -27,6 +27,7 @@ import {
     Zap,
 } from 'lucide-react';
 import Image from 'next/image';
+import Link from 'next/link';
 
 const ecosystem = [
     {
@@ -53,7 +54,7 @@ const data = [
         title: 'Quick Start',
         desc: 'Deploy via Docker Compose in seconds.',
         icon: Zap,
-        href: 'https://docs.chithi.dev/deployments/docker/basic/traefik/',
+        href: 'https://docs.chithi.dev/en/latest/deployments/docker/basic/traefik/',
     },
     // {
     //     title: 'Configuration',
@@ -71,7 +72,7 @@ const data = [
         title: 'Architecture',
         desc: 'Deep dive into Chithi.',
         icon: Cpu,
-        href: 'https://docs.chithi.dev/architecture/',
+        href: 'https://docs.chithi.dev/en/latest/architecture/',
     },
 ];
 const _PROD_URL = 'https://chithi.dev';
@@ -524,7 +525,7 @@ export default function Home() {
 
                         <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-4">
                             {data.map((doc, i) => (
-                                <a
+                                <Link
                                     key={i}
                                     href={doc.href}
                                     className="group block rounded-sm border border-zinc-800 p-6 transition-all hover:bg-zinc-900/40"
@@ -549,7 +550,7 @@ export default function Home() {
                                     <p className="text-xs text-zinc-500 leading-relaxed">
                                         {doc.desc}
                                     </p>
-                                </a>
+                                </Link>
                             ))}
                         </div>
                     </div>

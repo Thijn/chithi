@@ -1,7 +1,6 @@
 <script lang="ts">
 	import {
 		SunIcon,
-		Send,
 		MoonIcon,
 		LogOut,
 		UserCog,
@@ -24,6 +23,7 @@
 	import { page } from '$app/state';
 	import GithubIcon from '#logos/github.svelte';
 	import * as Tooltip from '$lib/components/ui/tooltip/index.js';
+	import favicon from '$lib/assets/logo.svg';
 
 	const { isAuthenticated, user: userData } = useAuth();
 
@@ -32,6 +32,7 @@
 	let initials = $derived(kebab_to_initials(userData.data?.username ?? ''));
 
 	let flagForRestart = $state(false);
+	
 	let hashedAvatar = $derived(await make_libravatar_url(userData.data?.email ?? ''))
 
 	function programmedNavigation(event: Event) {
@@ -173,9 +174,9 @@
 	<header
 		class="sticky top-0 z-50 flex items-center justify-between bg-transparent p-4 backdrop-blur-md transition-colors duration-500"
 	>
-		<a href="/" class="flex items-center" onclick={programmedNavigation}>
-			<Send class="h-6 w-6 text-primary" />
-			<h1 class="ml-2 text-2xl font-bold md:text-xl">Chithi</h1>
+		<a href="/" class="flex items-center gap-2" onclick={programmedNavigation}>
+			<img src={favicon} alt='logo' class='h-6 w-6 ' />
+			<h1 class="text-2xl font-bold md:text-xl">Chithi</h1>
 		</a>
 
 		<div class="flex items-center gap-2">

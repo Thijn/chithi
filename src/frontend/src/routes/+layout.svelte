@@ -5,15 +5,19 @@
   	import { afterNavigate, beforeNavigate } from "$app/navigation";
 
 	import NProgress from 'nprogress';
-	import favicon from '$lib/assets/favicon.svg';
+	import favicon from '$lib/assets/logo.svg';
 	import { ModeWatcher } from 'mode-watcher';
 	import { QueryClientProvider } from '@tanstack/svelte-query';
 	import { Toaster } from '$lib/components/ui/sonner/index.js';
+	import {onMount} from "svelte";
 	import type { LayoutData } from './$types';
 	import type { Snippet } from 'svelte';
 
 	let { children, data }: { children: Snippet; data: LayoutData } = $props();
 	
+	onMount(()=>{
+		NProgress.done();
+	})
 	beforeNavigate(()=>{
 		NProgress.start();
 	})

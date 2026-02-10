@@ -24,6 +24,7 @@
 	import GithubIcon from '#logos/github.svelte';
 	import * as Tooltip from '$lib/components/ui/tooltip/index.js';
 	import favicon from '$lib/assets/logo.svg';
+	import { PUBLIC_INSTANCE_URL } from '#consts/urls';
 
 	const { isAuthenticated, user: userData } = useAuth();
 
@@ -73,7 +74,7 @@
 			icon: BookOpenText
 		},
 		{
-			href: 'https://public.chithi.dev',
+			href: PUBLIC_INSTANCE_URL,
 			name: 'Public Instances',
 			icon: Earth
 		},

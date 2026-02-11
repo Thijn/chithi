@@ -19,7 +19,7 @@ jobs:
         runs-on: ${{ matrix.os }}
         strategy:
             matrix:
-                os: [ubuntu-latest, windows-latest]
+                os: [ubuntu-latest, windows-latest, macos-latest]
                 node-version: [latest]
 
         defaults:
@@ -42,3 +42,5 @@ jobs:
 
             - name: Build (Node adapter)
               run: npm run build:node
+              env:
+                NODE_OPTIONS: --max-old-space-size=4096

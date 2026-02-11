@@ -545,9 +545,17 @@
 								<Copy class="mr-2 h-4 w-4" /> Copy link
 							{/if}
 						</Button>
-						<Button variant="outline" href={finalLink} class="w-32 cursor-pointer">
+						<Button variant="outline" href={finalLink} class="w-24 cursor-pointer">
 							<Download class="mr-2 h-4 w-4" />
-							Download
+							DL
+						</Button>
+						<Button
+							variant="outline"
+							href={finalLink.replace('/download/', '/view/')}
+							class="w-24 cursor-pointer"
+						>
+							<Eye class="mr-2 h-4 w-4" />
+							View
 						</Button>
 					</div>
 				</div>

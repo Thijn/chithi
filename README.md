@@ -34,3 +34,10 @@ This project is licensed under the Mozilla Public License 2.0. See `LICENSE.md` 
 ## Contact
 
 If you need help running the project or want to contribute, open an issue or a discussion.
+
+
+## Star History
+
+## Star History
+
+[![Star History Chart](https://api.star-history.com/svg?repos=chithi-dev/chithi&type=date&legend=top-left)](https://www.star-history.com/#chithi-dev/chithi&type=date&legend=top-left)

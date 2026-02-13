@@ -30,6 +30,7 @@
 	import { cubicOut } from 'svelte/easing';
 	import { Tween } from 'svelte/motion';
 	import { ZipReader, BlobReader, BlobWriter, type Entry } from '@zip.js/zip.js';
+	import { getMimeType } from '#functions/mime';
 
 	let key = $derived(page.url.hash ? page.url.hash.slice(1).trim() : null);
 	let slug = $derived(page.params.slug);
@@ -47,25 +48,6 @@
 	let zipEntries = $state<Entry[]>([]);
 	let decryptedBlob = $state<Blob | null>(null);
 
-	const MIME_MAP: Record<string, string> = {
-		png: 'image/png', jpg: 'image/jpeg', jpeg: 'image/jpeg', gif: 'image/gif',
-		webp: 'image/webp', svg: 'image/svg+xml', bmp: 'image/bmp', ico: 'image/x-icon',
-		avif: 'image/avif', pdf: 'application/pdf', mp4: 'video/mp4', webm: 'video/webm',
-		ogv: 'video/ogg', mov: 'video/quicktime', mp3: 'audio/mpeg', wav: 'audio/wav',
-		ogg: 'audio/ogg', m4a: 'audio/mp4', aac: 'audio/aac', flac: 'audio/flac',
-		txt: 'text/plain', md: 'text/plain', json: 'application/json', js: 'text/javascript',
-		ts: 'text/plain', html: 'text/html', htm: 'text/html', css: 'text/css',
-		xml: 'text/xml', csv: 'text/csv', log: 'text/plain', yaml: 'text/plain',
-		yml: 'text/plain', sql: 'text/plain', py: 'text/plain', java: 'text/plain',
-		c: 'text/plain', cpp: 'text/plain', h: 'text/plain', go: 'text/plain',
-		rs: 'text/plain', php: 'text/plain', rb: 'text/plain', sh: 'text/plain',
-		svelte: 'text/plain', scss: 'text/plain'
-	};
-
-	function getMime(name: string): string {
-		const ext = name.split('.').pop()?.toLowerCase() || '';
-		return MIME_MAP[ext] || 'application/octet-stream';
-	}
 
 	function getFileIcon(name: string) {
 		const n = name.toLowerCase();
@@ -194,7 +176,7 @@
 
 	async function openEntry(entry: Entry) {
 		if (entry.directory || !entry.getData) return;
-		const mime = getMime(entry.filename);
+		const mime = getMimeType(entry.filename);
 		const blob = await entry.getData(new BlobWriter(mime));
 		const url = URL.createObjectURL(blob);
 		window.open(url, '_blank');

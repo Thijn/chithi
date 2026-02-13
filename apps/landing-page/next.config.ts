@@ -9,6 +9,9 @@ const nextConfig: NextConfig = {
     experimental: {
         optimizeServerReact: true,
     },
+    compiler: {
+        styledJsx: true,
+    },
     productionBrowserSourceMaps: true,
     reactCompiler: true,
 };

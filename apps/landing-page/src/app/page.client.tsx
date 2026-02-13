@@ -17,7 +17,6 @@ import {
     Copy,
     Cpu,
     Gauge,
-    Github,
     Globe,
     Layout,
     Server,
@@ -28,6 +27,7 @@ import {
 import Image from 'next/image';
 import Link from 'next/link';
 import { PUBLIC_INSTANCE_URL } from '@/consts/urls';
+import { GithubIcon as Github } from '@/icons/github';
 
 type Release = { tag_name?: string } | null;
 

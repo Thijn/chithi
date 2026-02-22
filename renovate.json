@@ -7,7 +7,9 @@
     {
       "matchUpdateTypes": ["patch", "minor"],
       "automerge": true,
-      "automergeType": "branch"
+      "automergeType": "branch",
+      "groupName": "all dependencies",
+      "matchPackagePatterns": ["*"],
     }
   ]
 }

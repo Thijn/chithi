@@ -1,6 +1,7 @@
 FROM node:25-alpine AS builder
 WORKDIR /app
 COPY package*.json .
+COPY .npmrc .
 RUN npm i
 COPY . .
 RUN npm run build:node

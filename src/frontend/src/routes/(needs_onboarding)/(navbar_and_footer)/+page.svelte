@@ -564,50 +564,52 @@
 							<QRCode value={finalLink} size={180} color="#000000" backgroundColor="#ffffff" />
 						</div>
 					</div>
-					<ButtonGroup.Root class="flex gap-4" aria-label="File actions">
-						<!-- copy -->
-						<Tooltip.Provider>
-							<Tooltip.Root>
-								<Tooltip.Trigger>
-									<Button onclick={copyLink} class="w-40 cursor-pointer">
-										{#if isCopied}
-											<Check class="mr-2 h-4 w-4" /> Copied
-										{:else}
-											<Copy class="mr-2 h-4 w-4" /> Copy link
-										{/if}
-									</Button>
-								</Tooltip.Trigger>
-								<Tooltip.Content>Copy link to clipboard</Tooltip.Content>
-							</Tooltip.Root>
-						</Tooltip.Provider>
+					<ButtonGroup.Root>
+						<ButtonGroup.Root>
+							<Tooltip.Provider>
+								<Tooltip.Root>
+									<Tooltip.Trigger>
+										<Button variant="outline" size="sm" onclick={copyLink} class="w-32">
+											{#if isCopied}
+												<Check class="mr-2 size-4" /> Copied
+											{:else}
+												<Copy class="mr-2 size-4" /> Copy link
+											{/if}
+										</Button>
+									</Tooltip.Trigger>
+									<Tooltip.Content>Copy link to clipboard</Tooltip.Content>
+								</Tooltip.Root>
+							</Tooltip.Provider>
+						</ButtonGroup.Root>
 
-						<!-- download -->
-						<Tooltip.Provider>
-							<Tooltip.Root>
-								<Tooltip.Trigger>
-									<Button variant="outline" href={finalLink} class="w-24 cursor-pointer">
-										<Download class="mr-2 h-4 w-4" />
-									</Button>
-								</Tooltip.Trigger>
-								<Tooltip.Content>Download file</Tooltip.Content>
-							</Tooltip.Root>
-						</Tooltip.Provider>
+						<ButtonGroup.Root>
+							<Button variant="outline" size="icon-sm" href={finalLink} aria-label="Download">
+								<Tooltip.Provider>
+									<Tooltip.Root>
+										<Tooltip.Trigger>
+											<Download class="size-4" />
+										</Tooltip.Trigger>
+										<Tooltip.Content>Download file</Tooltip.Content>
+									</Tooltip.Root>
+								</Tooltip.Provider>
+							</Button>
 
-						<!-- view -->
-						<Tooltip.Provider>
-							<Tooltip.Root>
-								<Tooltip.Trigger>
-									<Button
-										variant="outline"
-										href={finalLink.replace('/download/', '/view/')}
-										class="w-24 cursor-pointer"
-									>
-										<Eye class="mr-2 h-4 w-4" />
-									</Button>
-								</Tooltip.Trigger>
-								<Tooltip.Content>View file in browser</Tooltip.Content>
-							</Tooltip.Root>
-						</Tooltip.Provider>
+							<Button
+								variant="outline"
+								size="icon-sm"
+								href={finalLink.replace('/download/', '/view/')}
+								aria-label="View"
+							>
+								<Tooltip.Provider>
+									<Tooltip.Root>
+										<Tooltip.Trigger>
+											<Eye class="size-4" />
+										</Tooltip.Trigger>
+										<Tooltip.Content>View file in browser</Tooltip.Content>
+									</Tooltip.Root>
+								</Tooltip.Provider>
+							</Button>
+						</ButtonGroup.Root>
 					</ButtonGroup.Root>
 				</div>
 			{:else if isUploading}

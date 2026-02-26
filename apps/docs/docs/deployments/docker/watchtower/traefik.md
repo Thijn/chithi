@@ -42,10 +42,10 @@ services:
             # Experimental FastProxy
             - '--experimental.fastProxy'
 
-            # 🐞 Info logs
+            # Info logs
             - '--log.level=INFO'
 
-            # 🔁 Global redirect
+            # Global redirect
             - '--entrypoints.web.http.redirections.entrypoint.to=websecure'
             - '--entrypoints.web.http.redirections.entrypoint.scheme=https'
 

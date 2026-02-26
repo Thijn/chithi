@@ -19,7 +19,6 @@
 	let contentUrl = $state<string | null>(null);
 	let entryFilename = $state('');
 
-	
 	async function fetchDecryptAndShow() {
 		if (!key || !slug) {
 			status = 'error';
@@ -148,12 +147,15 @@
 	<!-- Full-page iframe-style viewer -->
 	<div class="fixed inset-0 z-50 flex flex-col bg-background" in:fade={{ duration: 200 }}>
 		<!-- Minimal toolbar -->
-		<div
-			class="flex h-10 shrink-0 items-center justify-between border-b bg-muted/50 px-3 text-sm"
-		>
+		<div class="flex h-10 shrink-0 items-center justify-between border-b bg-muted/50 px-3 text-sm">
 			<span class="truncate font-medium text-foreground/80">{entryFilename}</span>
 			<div class="flex items-center gap-1">
-				<Button variant="ghost" size="sm" class="h-7 gap-1.5 px-2 text-xs" onclick={handleDownloadFile}>
+				<Button
+					variant="ghost"
+					size="sm"
+					class="h-7 gap-1.5 px-2 text-xs"
+					onclick={handleDownloadFile}
+				>
 					<Download class="h-3.5 w-3.5" />
 					Save
 				</Button>

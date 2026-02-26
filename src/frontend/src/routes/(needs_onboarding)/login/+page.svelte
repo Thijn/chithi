@@ -1,18 +1,25 @@
 <script lang="ts" module>
-  import { z } from "zod/v4";
- 
-  const formSchema = z.object({
-    email: z.string().min(1, "Email or Username is required"),
-    password: z.string().min(1, "Password is required")
-  });
-  
-  export type FormSchema = typeof formSchema;
+	import { z } from 'zod/v4';
+
+	const formSchema = z.object({
+		email: z.string().min(1, 'Email or Username is required'),
+		password: z.string().min(1, 'Password is required')
+	});
+
+	export type FormSchema = typeof formSchema;
 </script>
 
 <script lang="ts">
 	import { Button } from '$lib/components/ui/button';
 	import { Input } from '$lib/components/ui/input';
-	import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '$lib/components/ui/card';
+	import {
+		Card,
+		CardContent,
+		CardDescription,
+		CardFooter,
+		CardHeader,
+		CardTitle
+	} from '$lib/components/ui/card';
 	import { page } from '$app/state';
 	import {
 		ShieldCheck,
@@ -29,24 +36,24 @@
 	import { useAuth } from '#queries/auth';
 	import { goto } from '$app/navigation';
 	import { toast } from 'svelte-sonner';
-	import { zod4 } from "sveltekit-superforms/adapters";
-	import * as Form from "$lib/components/ui/form/index";
-	import { defaults, superForm } from "sveltekit-superforms";
+	import { zod4 } from 'sveltekit-superforms/adapters';
+	import * as Form from '$lib/components/ui/form/index';
+	import { defaults, superForm } from 'sveltekit-superforms';
 
 	// States
 	let showPassword = $state(false);
-	
+
 	// Next url
-	const nextUrl = $derived.by(()=>{
-		const url =page.url.searchParams.get('next') ?? '/'; 
-		if (url.startsWith('/admin')){
-			return "/"
+	const nextUrl = $derived.by(() => {
+		const url = page.url.searchParams.get('next') ?? '/';
+		if (url.startsWith('/admin')) {
+			return '/';
 		}
-		return url
+		return url;
 	});
 
 	const { login } = useAuth();
-	
+
 	const form = superForm(defaults(zod4(formSchema)), {
 		validators: zod4(formSchema),
 		SPA: true,
@@ -63,7 +70,7 @@
 					}
 				}
 			} else {
-				toast.error("Please fix the errors in the form.");
+				toast.error('Please fix the errors in the form.');
 			}
 		}
 	});
@@ -71,7 +78,6 @@
 	const { form: formData, enhance, submitting } = form;
 
 	const isPasswordEmpty = $derived($formData.password.length === 0);
-
 
 	// Auto-hide password text if the input is cleared
 	$effect(() => {
@@ -131,8 +137,10 @@
 			<CardContent>
 				<form use:enhance class="grid gap-6">
 					<Form.Field {form} name="email">
-						<Form.Control >
-							<Form.Label class="ml-1 text-sm font-medium text-foreground">Email or Username</Form.Label>
+						<Form.Control>
+							<Form.Label class="ml-1 text-sm font-medium text-foreground"
+								>Email or Username</Form.Label
+							>
 							<div class="group relative">
 								<div
 									class="absolute inset-y-0 left-3.5 flex items-center text-muted-foreground transition-colors group-focus-within:text-primary"

@@ -35,6 +35,7 @@
 	import { markdown_to_html } from '$lib/markdown/markdown';
 	import { cubicOut } from 'svelte/easing';
 	import { Tween } from 'svelte/motion';
+	import * as ButtonGroup from '$lib/components/ui/button-group';
 
 	const { config: configData } = useConfigQuery();
 
@@ -476,6 +477,53 @@
 	</div>
 {/snippet}
 
+{#snippet configSkeleton()}
+	<div
+		class="relative flex h-full w-full flex-col items-center justify-center rounded-lg bg-card p-12"
+	>
+		<svg class="pointer-events-none absolute inset-0 h-full w-full rounded-lg">
+			<rect
+				width="100%"
+				height="100%"
+				rx="8"
+				ry="8"
+				fill="none"
+				stroke="currentColor"
+				stroke-width="2"
+				class="text-border"
+				stroke-dasharray="10"
+			/>
+		</svg>
+		<Skeleton class="mb-6 h-16 w-16 rounded-full" />
+		<Skeleton class="mb-2 h-7 w-48" />
+		<Skeleton class="mx-auto mb-8 h-6 w-full md:mb-4 md:h-5" />
+		<Skeleton class="h-19 w-64 rounded-md md:h-14 md:w-56" />
+	</div>
+{/snippet}
+
+{#snippet rightColumnSkeleton()}
+	<div class="flex h-full w-full flex-col p-4 lg:p-8">
+		<ScrollArea class="h-auto w-full lg:h-full">
+			<div
+				class="prose w-full max-w-none prose-zinc md:text-sm lg:text-lg lg:leading-relaxed dark:prose-invert"
+			>
+				<Skeleton class="mb-4 h-8 w-1/2" />
+				<div class="space-y-2">
+					<Skeleton class="h-4 w-full" />
+					<Skeleton class="h-4 w-full" />
+					<Skeleton class="h-4 w-2/4" />
+					<br />
+					<Skeleton class="h-4 w-full" />
+					<Skeleton class="h-4 w-2/3" />
+
+					<br />
+					<Skeleton class="h-4 w-full" />
+					<Skeleton class="h-4 w-1/3" />
+				</div>
+			</div>
+		</ScrollArea>
+	</div>
+{/snippet}
 <Card
 	class={cn(
 		'relative z-10 mx-auto w-full max-w-5xl border-border bg-card transition-all duration-200',
@@ -493,27 +541,7 @@
 	<CardContent class="p-6">
 		<div class="grid min-h-150 grid-cols-1 gap-8 lg:grid-cols-2">
 			{#if configData.isLoading || (dev && debugLoading)}
-				<div
-					class="relative flex h-full w-full flex-col items-center justify-center rounded-lg bg-card p-12"
-				>
-					<svg class="pointer-events-none absolute inset-0 h-full w-full rounded-lg">
-						<rect
-							width="100%"
-							height="100%"
-							rx="8"
-							ry="8"
-							fill="none"
-							stroke="currentColor"
-							stroke-width="2"
-							class="text-border"
-							stroke-dasharray="10"
-						/>
-					</svg>
-					<Skeleton class="mb-6 h-16 w-16 rounded-full" />
-					<Skeleton class="mb-2 h-7 w-48" />
-					<Skeleton class="mx-auto mb-8 h-6 w-full md:mb-4 md:h-5" />
-					<Skeleton class="h-19 w-64 rounded-md md:h-14 md:w-56" />
-				</div>
+				{@render configSkeleton()}
 			{:else if isUploadComplete}
 				<!-- Final Success Screen -->
 				<div
@@ -536,28 +564,51 @@
 							<QRCode value={finalLink} size={180} color="#000000" backgroundColor="#ffffff" />
 						</div>
 					</div>
+					<ButtonGroup.Root class="flex gap-4" aria-label="File actions">
+						<!-- copy -->
+						<Tooltip.Provider>
+							<Tooltip.Root>
+								<Tooltip.Trigger>
+									<Button onclick={copyLink} class="w-40 cursor-pointer">
+										{#if isCopied}
+											<Check class="mr-2 h-4 w-4" /> Copied
+										{:else}
+											<Copy class="mr-2 h-4 w-4" /> Copy link
+										{/if}
+									</Button>
+								</Tooltip.Trigger>
+								<Tooltip.Content>Copy link to clipboard</Tooltip.Content>
+							</Tooltip.Root>
+						</Tooltip.Provider>
 
-					<div class="flex gap-4">
-						<Button onclick={copyLink} class="w-40 cursor-pointer">
-							{#if isCopied}
-								<Check class="mr-2 h-4 w-4" /> Copied
-							{:else}
-								<Copy class="mr-2 h-4 w-4" /> Copy link
-							{/if}
-						</Button>
-						<Button variant="outline" href={finalLink} class="w-24 cursor-pointer">
-							<Download class="mr-2 h-4 w-4" />
-							DL
-						</Button>
-						<Button
-							variant="outline"
-							href={finalLink.replace('/download/', '/view/')}
-							class="w-24 cursor-pointer"
-						>
-							<Eye class="mr-2 h-4 w-4" />
-							View
-						</Button>
-					</div>
+						<!-- download -->
+						<Tooltip.Provider>
+							<Tooltip.Root>
+								<Tooltip.Trigger>
+									<Button variant="outline" href={finalLink} class="w-24 cursor-pointer">
+										<Download class="mr-2 h-4 w-4" />
+									</Button>
+								</Tooltip.Trigger>
+								<Tooltip.Content>Download file</Tooltip.Content>
+							</Tooltip.Root>
+						</Tooltip.Provider>
+
+						<!-- view -->
+						<Tooltip.Provider>
+							<Tooltip.Root>
+								<Tooltip.Trigger>
+									<Button
+										variant="outline"
+										href={finalLink.replace('/download/', '/view/')}
+										class="w-24 cursor-pointer"
+									>
+										<Eye class="mr-2 h-4 w-4" />
+									</Button>
+								</Tooltip.Trigger>
+								<Tooltip.Content>View file in browser</Tooltip.Content>
+							</Tooltip.Root>
+						</Tooltip.Provider>
+					</ButtonGroup.Root>
 				</div>
 			{:else if isUploading}
 				{#if uploadingInProgress}
@@ -852,36 +903,16 @@
 
 			<!-- Right Column: Info -->
 			{#if configData.isLoading || (dev && debugLoading)}
-				<div class="flex h-full w-full flex-col p-4 lg:p-8">
-					<ScrollArea class="h-auto w-full lg:h-full">
-						<div
-							class="prose w-full max-w-none prose-zinc md:text-sm lg:text-lg lg:leading-relaxed dark:prose-invert"
-						>
-							<Skeleton class="mb-4 h-8 w-1/2" />
-							<div class="space-y-2">
-								<Skeleton class="h-4 w-full" />
-								<Skeleton class="h-4 w-full" />
-								<Skeleton class="h-4 w-2/4" />
-								<br />
-								<Skeleton class="h-4 w-full" />
-								<Skeleton class="h-4 w-2/3" />
-
-								<br />
-								<Skeleton class="h-4 w-full" />
-								<Skeleton class="h-4 w-1/3" />
-							</div>
-						</div>
-					</ScrollArea>
-				</div>
+				{@render rightColumnSkeleton()}
 			{:else if !isUploadComplete && !isUploading}
 				<div class="flex h-full w-full flex-col p-4 lg:p-8">
 					<ScrollArea class="h-auto w-full lg:h-full">
 						<div
 							class="prose w-full max-w-none prose-zinc md:text-sm lg:text-lg lg:leading-relaxed dark:prose-invert"
 						>
-						{#await markdown_to_html(detailsMarkdown) then html}
-							{@html html}
-						{/await}
+							{#await markdown_to_html(detailsMarkdown) then html}
+								{@html html}
+							{/await}
 						</div>
 					</ScrollArea>
 				</div>

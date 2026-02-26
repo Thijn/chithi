@@ -106,7 +106,6 @@
 	}
 </script>
 
-
 <Card.Root class="relative z-10 mx-auto w-full max-w-5xl border-border bg-card">
 	<Card.Content class="p-6">
 		<div class="flex min-h-150 flex-col items-center justify-center">

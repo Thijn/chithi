@@ -22,7 +22,9 @@
 	// Derived state
 	let configData = $derived(configQuery.data);
 	let descDraft = $state('');
-	let previewMarkdown = $derived(descDraft ? String(descDraft) : configData?.site_description ?? "");
+	let previewMarkdown = $derived(
+		descDraft ? String(descDraft) : (configData?.site_description ?? '')
+	);
 
 	// UI state
 	let editing = $state<
@@ -97,7 +99,7 @@
 	{#if configQuery.isFetching}
 		<div
 			in:fade
-			class="fixed top-24 right-10 z-50 flex items-center gap-2 rounded-full border bg-background/80 px-3 py-1 text-xs font-semibold tracking-wider text-muted-foreground uppercase backdrop-blur-sm shadow-sm"
+			class="fixed top-24 right-10 z-50 flex items-center gap-2 rounded-full border bg-background/80 px-3 py-1 text-xs font-semibold tracking-wider text-muted-foreground uppercase shadow-sm backdrop-blur-sm"
 		>
 			<LoaderCircle class="size-3.5 animate-spin" /> Syncing
 		</div>
@@ -117,7 +119,7 @@
 		</div>
 	{:else if configData}
 		<!-- Storage & Files Section -->
-		<Card.Root class="bg-background border">
+		<Card.Root class="border bg-background">
 			<Card.Header class="px-6 py-4">
 				<Card.Title class="text-base font-medium">Storage & Files</Card.Title>
 			</Card.Header>
@@ -227,7 +229,7 @@
 		</Card.Root>
 
 		<!-- Retention Section -->
-		<Card.Root class="bg-background border">
+		<Card.Root class="border bg-background">
 			<Card.Header class="px-6 py-4">
 				<Card.Title class="text-base font-medium">Retention Policy</Card.Title>
 			</Card.Header>
@@ -332,7 +334,7 @@
 													(_: any, idx: number) => idx !== i
 												)
 											})}
-										class="text-muted-foreground hover:text-foreground cursor-pointer"
+										class="cursor-pointer text-muted-foreground hover:text-foreground"
 									>
 										<X class="size-3" />
 									</button>
@@ -344,11 +346,11 @@
 								<Input
 									type="number"
 									bind:value={tempInput.time}
-									class="h-8 w-20 bg-background border-border"
+									class="h-8 w-20 border-border bg-background"
 									min="1"
 								/>
 								<Select.Root type="single" bind:value={tempInput.timeUnit}>
-									<Select.Trigger class="h-8 w-25 bg-background border-border"
+									<Select.Trigger class="h-8 w-25 border-border bg-background"
 										>{tempInput.timeUnit}</Select.Trigger
 									>
 									<Select.Content>
@@ -406,7 +408,7 @@
 													(_: any, idx: number) => idx !== i
 												)
 											})}
-										class="text-muted-foreground hover:text-foreground cursor-pointer"
+										class="cursor-pointer text-muted-foreground hover:text-foreground"
 									>
 										<X class="size-3" />
 									</button>
@@ -418,7 +420,7 @@
 								<Input
 									type="number"
 									bind:value={tempInput.dl}
-									class="h-8 w-20 bg-background border-border"
+									class="h-8 w-20 border-border bg-background"
 									min="1"
 								/>
 								<Button
@@ -439,7 +441,7 @@
 		</Card.Root>
 
 		<!-- File Security -->
-		<Card.Root class="bg-background border">
+		<Card.Root class="border bg-background">
 			<Card.Header class="px-6 py-4">
 				<Card.Title class="text-base font-medium">File Security</Card.Title>
 			</Card.Header>
@@ -506,7 +508,7 @@
 													(t: any) => t !== type
 												)
 											})}
-										class="rounded-full p-0.5 hover:bg-emerald-500/20 cursor-pointer"
+										class="cursor-pointer rounded-full p-0.5 hover:bg-emerald-500/20"
 									>
 										<X class="size-3" />
 									</button>
@@ -577,7 +579,7 @@
 													(t: any) => t !== type
 												)
 											})}
-										class="rounded-full p-0.5 hover:bg-destructive/20 cursor-pointer"
+										class="cursor-pointer rounded-full p-0.5 hover:bg-destructive/20"
 									>
 										<X class="size-3" />
 									</button>
@@ -590,10 +592,8 @@
 		</Card.Root>
 
 		<!-- Site Description -->
-		<Card.Root class="bg-background border">
-			<Card.Header
-				class="flex flex-row items-center justify-between px-6 py-4"
-			>
+		<Card.Root class="border bg-background">
+			<Card.Header class="flex flex-row items-center justify-between px-6 py-4">
 				<div>
 					<Card.Title class="text-base font-medium">Site Description</Card.Title>
 					<Card.Description class="mt-1"

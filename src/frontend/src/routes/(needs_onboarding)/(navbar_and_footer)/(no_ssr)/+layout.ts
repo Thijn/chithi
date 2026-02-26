@@ -1,2 +1,2 @@
 export const trailingSlash = 'ignore';
-export const ssr = false
+export const ssr = false;

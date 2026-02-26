@@ -48,13 +48,17 @@
 	let zipEntries = $state<Entry[]>([]);
 	let decryptedBlob = $state<Blob | null>(null);
 
-
 	function getFileIcon(name: string) {
 		const n = name.toLowerCase();
 		if (n.match(/\.(png|jpg|jpeg|gif|webp|svg|ico|bmp|avif)$/)) return ImageIcon;
 		if (n.match(/\.(mp4|webm|ogv|mov|mkv)$/)) return FilePlay;
 		if (n.match(/\.(mp3|wav|ogg|m4a|aac|flac)$/)) return FileHeadphone;
-		if (n.match(/\.(txt|md|json|js|ts|svelte|html|css|scss|xml|log|csv|sh|yaml|yml|sql|py|java|c|cpp|h|go|rs|php|rb)$/)) return FileCode;
+		if (
+			n.match(
+				/\.(txt|md|json|js|ts|svelte|html|css|scss|xml|log|csv|sh|yaml|yml|sql|py|java|c|cpp|h|go|rs|php|rb)$/
+			)
+		)
+			return FileCode;
 		return File;
 	}
 
@@ -98,7 +102,13 @@
 		downloadProgress = new Tween(0, { duration: 500, easing: cubicOut });
 
 		try {
-			const blob = await downloadFileBlob(slug, key, password, fileSize, (p) => (downloadProgress.target = p));
+			const blob = await downloadFileBlob(
+				slug,
+				key,
+				password,
+				fileSize,
+				(p) => (downloadProgress.target = p)
+			);
 			decryptedBlob = blob;
 
 			status = 'unzipping';
@@ -140,15 +150,24 @@
 		const streamWithProgress = new ReadableStream({
 			async pull(controller) {
 				const { done, value } = await reader.read();
-				if (done) { controller.close(); return; }
+				if (done) {
+					controller.close();
+					return;
+				}
 				loaded += value.byteLength;
 				if (totalSize > 0) onProgress(Math.round((loaded / totalSize) * 100));
 				controller.enqueue(value);
 			},
-			cancel(reason) { return reader.cancel(reason); }
+			cancel(reason) {
+				return reader.cancel(reason);
+			}
 		});
 
-		const { stream: decryptedStream } = await createDecryptedStream(streamWithProgress, key, password);
+		const { stream: decryptedStream } = await createDecryptedStream(
+			streamWithProgress,
+			key,
+			password
+		);
 		const decReader = decryptedStream.getReader();
 		let firstChunk: Uint8Array | undefined;
 
@@ -215,7 +234,6 @@
 <Card.Root class="relative z-10 mx-auto w-full max-w-5xl border-border bg-card">
 	<Card.Content class="p-6">
 		<div class="flex min-h-150 flex-col items-center justify-center">
-
 			{#if status === 'checking'}
 				<div class="flex flex-col items-center justify-center py-8">
 					<LoaderCircle class="mb-4 h-8 w-8 animate-spin text-primary" />
@@ -227,7 +245,9 @@
 				{#if !key}
 					<div in:fly={{ y: 20, duration: 800 }} class="mx-auto w-full max-w-lg">
 						<Card.Header class="px-0 text-center">
-							<div class="mx-auto my-3 flex h-20 w-20 items-center justify-center rounded-full bg-destructive/10">
+							<div
+								class="mx-auto my-3 flex h-20 w-20 items-center justify-center rounded-full bg-destructive/10"
+							>
 								<KeyRound class="h-10 w-10 text-destructive" />
 							</div>
 							<Card.Title class="text-2xl font-bold">Decryption Key Required</Card.Title>
@@ -334,33 +354,47 @@
 							<div class="p-2">
 								{#each zipEntries as entry}
 									<div
-										class="group flex w-full items-center gap-3 rounded-md p-2 hover:bg-muted/50 transition-colors"
+										class="group flex w-full items-center gap-3 rounded-md p-2 transition-colors hover:bg-muted/50"
 									>
 										<button
-											class="flex-1 flex items-center gap-3 text-left overflow-hidden cursor-pointer bg-transparent border-0 p-0"
+											class="flex flex-1 cursor-pointer items-center gap-3 overflow-hidden border-0 bg-transparent p-0 text-left"
 											onclick={() => openEntry(entry)}
 										>
 											{#if entry.directory}
-												<Folder class="h-5 w-5 text-primary shrink-0" />
+												<Folder class="h-5 w-5 shrink-0 text-primary" />
 											{:else}
-											{@const Icon = getFileIcon(entry.filename)}
-											<Icon class="h-5 w-5 text-primary shrink-0" />
+												{@const Icon = getFileIcon(entry.filename)}
+												<Icon class="h-5 w-5 shrink-0 text-primary" />
 											{/if}
 
 											<div class="flex-1 overflow-hidden">
 												<p class="truncate text-sm font-medium">{entry.filename}</p>
 												{#if !entry.directory}
-													<p class="text-xs text-muted-foreground">{formatFileSize(entry.uncompressedSize)}</p>
+													<p class="text-xs text-muted-foreground">
+														{formatFileSize(entry.uncompressedSize)}
+													</p>
 												{/if}
 											</div>
 										</button>
 
 										{#if !entry.directory}
-											<div class="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-												<Button variant="ghost" size="icon" class="h-8 w-8" title="Open in New Tab" onclick={() => openEntry(entry)}>
+											<div class="flex gap-1 opacity-0 transition-opacity group-hover:opacity-100">
+												<Button
+													variant="ghost"
+													size="icon"
+													class="h-8 w-8"
+													title="Open in New Tab"
+													onclick={() => openEntry(entry)}
+												>
 													<ExternalLink class="h-4 w-4" />
 												</Button>
-												<Button variant="ghost" size="icon" class="h-8 w-8" title="Save File" onclick={() => saveEntry(entry)}>
+												<Button
+													variant="ghost"
+													size="icon"
+													class="h-8 w-8"
+													title="Save File"
+													onclick={() => saveEntry(entry)}
+												>
 													<Download class="h-4 w-4" />
 												</Button>
 											</div>
@@ -377,7 +411,6 @@
 					</div>
 				</div>
 			{/if}
-
 		</div>
 	</Card.Content>
 </Card.Root>

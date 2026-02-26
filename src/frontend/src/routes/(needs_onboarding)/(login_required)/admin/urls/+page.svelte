@@ -60,7 +60,7 @@
 <Separator class="mb-10" />
 
 <div class="space-y-6">
-	<Card.Root class="bg-background border">
+	<Card.Root class="border bg-background">
 		<Card.Content class="p-0">
 			<Table.Root>
 				<Table.Header>

@@ -2,28 +2,28 @@
 	import '#css/tailwind.css';
 	import '#css/nprogress.scss';
 	import '#css/fonts.scss';
-  	import { afterNavigate, beforeNavigate } from "$app/navigation";
+	import { afterNavigate, beforeNavigate } from '$app/navigation';
 
 	import NProgress from 'nprogress';
 	import favicon from '$lib/assets/logo.svg';
 	import { ModeWatcher } from 'mode-watcher';
 	import { QueryClientProvider } from '@tanstack/svelte-query';
 	import { Toaster } from '$lib/components/ui/sonner/index';
-	import {onMount} from "svelte";
+	import { onMount } from 'svelte';
 	import type { LayoutData } from './$types';
 	import type { Snippet } from 'svelte';
 
 	let { children, data }: { children: Snippet; data: LayoutData } = $props();
-	
-	onMount(()=>{
+
+	onMount(() => {
 		NProgress.done();
-	})
-	beforeNavigate(()=>{
+	});
+	beforeNavigate(() => {
 		NProgress.start();
-	})
-	afterNavigate(()=>{
+	});
+	afterNavigate(() => {
 		NProgress.done();
-	})
+	});
 </script>
 
 <svelte:head>

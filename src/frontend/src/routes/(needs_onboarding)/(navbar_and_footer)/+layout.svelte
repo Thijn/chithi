@@ -23,7 +23,14 @@
 	import * as Tooltip from '$lib/components/ui/tooltip/index';
 	import favicon from '$lib/assets/logo.svg';
 	import { PUBLIC_INSTANCE_URL } from '#consts/urls';
-    import { SiGithub,SiBuymeacoffee,SiLiberapay,SiKofi, SiPatreon,SiUptimekuma } from "@icons-pack/svelte-simple-icons";
+	import {
+		SiGithub,
+		SiBuymeacoffee,
+		SiLiberapay,
+		SiKofi,
+		SiPatreon,
+		SiUptimekuma
+	} from '@icons-pack/svelte-simple-icons';
 	import { env } from '$env/dynamic/public';
 
 	const { isAuthenticated, user: userData } = useAuth();
@@ -33,8 +40,8 @@
 	let initials = $derived(kebab_to_initials(userData.data?.username ?? ''));
 
 	let flagForRestart = $state(false);
-	
-	let hashedAvatar = $derived(await make_libravatar_url(userData.data?.email ?? ''))
+
+	let hashedAvatar = $derived(await make_libravatar_url(userData.data?.email ?? ''));
 
 	function programmedNavigation(event: Event) {
 		const anchorElement = event.currentTarget as HTMLAnchorElement;
@@ -50,53 +57,55 @@
 			href: '/admin/config',
 			name: 'Config',
 			icon: SlidersVertical,
-			order:2
+			order: 2
 		},
 		{
 			href: '/admin/user',
 			name: 'Customize User',
 			icon: UserCog,
-			order:1
+			order: 1
 		},
-	
+
 		{
 			href: '/admin/urls',
 			name: 'Outstanding URLs',
 			icon: Link,
-			order:3
+			order: 3
 		}
 	];
-	let footerLinks = $state(
-		[
+	let footerLinks = $state([
 		{
-			href:'/speedtest',
-			name:"Speedtest",
-			icon:Gauge,
-			order:4,
+			href: '/speedtest',
+			name: 'Speedtest',
+			icon: Gauge,
+			order: 4
 		},
 		{
 			href: 'https://docs.chithi.dev',
 			name: 'Documentation',
 			icon: BookOpenText,
-					order:3,
+			order: 3
 		},
 		{
 			href: PUBLIC_INSTANCE_URL,
 			name: 'Public Instances',
 			icon: SiUptimekuma,
-			order:2,
+			order: 2
 		},
 		{
 			href: 'https://github.com/chithi-dev/chithi',
 			name: 'Source',
 			icon: SiGithub,
-						order:1,
+			order: 1
 		}
-	]
-	);
+	]);
 
-	$effect(()=>{
-		type DonationKey = 'PUBLIC_BUY_ME_A_COFFEE' | 'PUBLIC_LIBERAPAY' | 'PUBLIC_KO_FI' | 'PUBLIC_PATREON';
+	$effect(() => {
+		type DonationKey =
+			| 'PUBLIC_BUY_ME_A_COFFEE'
+			| 'PUBLIC_LIBERAPAY'
+			| 'PUBLIC_KO_FI'
+			| 'PUBLIC_PATREON';
 
 		interface DonationPlatform {
 			key: DonationKey;
@@ -105,10 +114,10 @@
 		}
 
 		const donationPlatforms: DonationPlatform[] = [
-			{ key: 'PUBLIC_BUY_ME_A_COFFEE', name: "Support by buying a coffee", icon: SiBuymeacoffee },
-			{ key: 'PUBLIC_LIBERAPAY',       name: "Support by Liberapay",        icon: SiLiberapay },
-			{ key: 'PUBLIC_KO_FI',           name: "Support by Ko-Fi",            icon: SiKofi },
-			{ key: 'PUBLIC_PATREON',         name: "Support by Patreon",          icon: SiPatreon }
+			{ key: 'PUBLIC_BUY_ME_A_COFFEE', name: 'Support by buying a coffee', icon: SiBuymeacoffee },
+			{ key: 'PUBLIC_LIBERAPAY', name: 'Support by Liberapay', icon: SiLiberapay },
+			{ key: 'PUBLIC_KO_FI', name: 'Support by Ko-Fi', icon: SiKofi },
+			{ key: 'PUBLIC_PATREON', name: 'Support by Patreon', icon: SiPatreon }
 		];
 		// Get the current largest order in footerLinks
 		let maxOrder = footerLinks.reduce((max, link) => Math.max(max, link.order ?? 0), 0);
@@ -116,20 +125,22 @@
 		donationPlatforms.forEach(({ key, name, icon }) => {
 			const href = (env as Record<string, string | undefined>)[key];
 			if (href) {
-			maxOrder += 1; // increment for each new donation link
-			footerLinks.push({ href, name, icon, order: maxOrder });
+				maxOrder += 1; // increment for each new donation link
+				footerLinks.push({ href, name, icon, order: maxOrder });
 			}
 		});
-	})
+	});
 </script>
 
-<div class="relative flex min-h-svh min-w-screen flex-col overflow-hidden bg-background text-foreground">
+<div
+	class="relative flex min-h-svh min-w-screen flex-col overflow-hidden bg-background text-foreground"
+>
 	<!-- Top Bar -->
 	<header
 		class="sticky top-0 z-50 flex items-center justify-between bg-transparent p-4 backdrop-blur-md transition-colors duration-500"
 	>
 		<a href="/" class="flex items-center gap-2" onclick={programmedNavigation}>
-			<img src={favicon} alt='logo' class='h-6 w-6 ' />
+			<img src={favicon} alt="logo" class="h-6 w-6" />
 			<h1 class="text-2xl font-bold md:text-xl">Chithi</h1>
 		</a>
 
@@ -173,7 +184,11 @@
 								<Dropdown.DropdownMenuSubContent>
 									{#each adminLinks as item}
 										<Dropdown.DropdownMenuItem>
-											<a href={item.href} class="flex w-full items-center gap-2" style="order:{item.order}">
+											<a
+												href={item.href}
+												class="flex w-full items-center gap-2"
+												style="order:{item.order}"
+											>
 												<item.icon />
 												{item.name}
 											</a>
@@ -229,7 +244,7 @@
 				class="flex flex-row flex-wrap items-center justify-end gap-2 text-sm text-muted-foreground md:gap-6"
 			>
 				{#each footerLinks as footer_item}
-					<div style='order:{footer_item.order}'>
+					<div style="order:{footer_item.order}">
 						<Tooltip.Provider delayDuration={100}>
 							<Tooltip.Root>
 								<Tooltip.Trigger

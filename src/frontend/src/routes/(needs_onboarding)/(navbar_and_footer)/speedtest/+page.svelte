@@ -107,11 +107,13 @@
 						)}
 					>
 						{#if status === 'finished'}
-							<span class="text-sm font-medium uppercase tracking-wider text-green-500">
+							<span class="text-sm font-medium tracking-wider text-green-500 uppercase">
 								Test Complete
 							</span>
 						{:else}
-							<span class="animate-pulse text-sm font-medium uppercase tracking-wider text-muted-foreground">
+							<span
+								class="animate-pulse text-sm font-medium tracking-wider text-muted-foreground uppercase"
+							>
 								{status}...
 							</span>
 						{/if}
@@ -208,7 +210,7 @@
 				</div>
 			</div>
 		</CardContent>
-		<CardFooter class="flex justify-center pb-8 pt-4">
+		<CardFooter class="flex justify-center pt-4 pb-8">
 			{#if status === 'idle' || status === 'finished' || status === 'error'}
 				<Button
 					size="lg"

@@ -5,23 +5,20 @@
 	import * as Empty from '$lib/components/ui/empty/index';
 	import { LoaderCircle, Lock } from '@lucide/svelte';
 	import { Button } from '$lib/components/ui/button';
+	import { user_store } from '$lib/store/user.svelte';
 
-	const { isAuthenticated, user: userData } = useAuth();
-
+	const { user: userData } = useAuth();
+	const { is_authenticated } = user_store();
 	let { children } = $props();
 
 	$effect(() => {
-		if (!isAuthenticated()) {
+		if (is_authenticated === null) {
 			goto(`/login?next=${page.url.pathname}`);
 		}
 	});
 </script>
 
-{#if userData.isLoading}
-	<div class="flex w-full flex-1 items-center justify-center">
-		<LoaderCircle class="h-8 w-8 animate-spin text-muted-foreground" />
-	</div>
-{:else if [null, undefined].includes(userData.data)}
+{#if [null, undefined].includes(userData.data)}
 	<div class="flex min-h-svh w-full flex-1 items-center justify-center p-4">
 		<Empty.Root>
 			<Empty.Header class="text-center">

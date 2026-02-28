@@ -7,7 +7,9 @@ const fetchConfig = async ({
 }: {
 	fetch?: typeof globalThis.window.fetch;
 }) => {
-	const res = await fetch(CONFIG_URL);
+	const res = await fetch(CONFIG_URL, {
+		credentials: 'include'
+	});
 
 	return res.json();
 };
@@ -53,19 +55,17 @@ export const useConfigQuery = () => {
 	}));
 
 	const update_config = async (data: Partial<ConfigIn>) => {
-		const token = localStorage.getItem('auth_token');
-		if (!token) return null;
-
 		const res = await fetch(ADMIN_CONFIG_URL, {
 			method: 'PATCH',
 			headers: {
-				'Content-Type': 'application/json',
-				Authorization: `Bearer ${token}`
+				'Content-Type': 'application/json'
 			},
+			credentials: 'include',
 			body: JSON.stringify(data)
 		});
-
-		if (res.ok) await queryClient.invalidateQueries({ queryKey: ['config'] });
+		if (res.ok) {
+			await queryClient.invalidateQueries({ queryKey: ['config'] });
+		}
 	};
 
 	return {

@@ -24,7 +24,7 @@
 	import favicon from '$lib/assets/logo.svg';
 	import { PUBLIC_INSTANCE_URL } from '#consts/urls';
 	import { env } from '$env/dynamic/public';
-	import { SiGithub, SiUptimekuma } from '@icons-pack/svelte-simple-icons';
+	import { SiGithub, SiUpptime } from '@icons-pack/svelte-simple-icons';
 	import { user_store } from '$lib/store/user.svelte';
 	const { user: userData } = useAuth();
 
@@ -83,7 +83,7 @@
 		{
 			href: PUBLIC_INSTANCE_URL,
 			name: 'Public Instances',
-			icon: SiUptimekuma,
+			icon: SiUpptime,
 			order: 2
 		},
 		{

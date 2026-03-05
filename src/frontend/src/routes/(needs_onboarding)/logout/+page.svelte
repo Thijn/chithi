@@ -1,18 +1,13 @@
-<script>
+<script lang="ts">
 	import { user_store } from '$lib/store/user.svelte';
-	import { page } from '$app/state';
 	import { onMount } from 'svelte';
 
-	const next = $derived.by(() => {
-		const url = page.url.searchParams.get('next') ?? '/';
-		if (url.startsWith('/admin')) {
-			return '/';
-		}
-		return url;
-	});
+	let formElement = $state<null | HTMLFormElement>(null);
 
 	onMount(() => {
 		user_store.unauthenticate();
-		window.location.href = next;
+		formElement?.requestSubmit();
 	});
 </script>
+
+<form bind:this={formElement} method="POST"></form>

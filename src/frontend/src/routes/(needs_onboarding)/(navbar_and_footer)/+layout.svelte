@@ -180,26 +180,24 @@
 						</Dropdown.Item>
 
 						<Dropdown.Separator />
-						<Dropdown.DropdownMenuSub>
-							<Dropdown.DropdownMenuSubTrigger>Admin</Dropdown.DropdownMenuSubTrigger>
-							<Dropdown.DropdownMenuPortal>
-								<Dropdown.DropdownMenuSubContent>
-									{#each adminLinks as item}
-										<Dropdown.DropdownMenuItem>
-											<a
-												href={item.href}
-												class="flex w-full items-center gap-2"
-												style="order:{item.order}"
-											>
-												<item.icon />
-												{item.name}
-											</a>
-										</Dropdown.DropdownMenuItem>
-									{/each}
-									<!-- <Dropdown.DropdownMenuSeparator /> -->
-								</Dropdown.DropdownMenuSubContent>
-							</Dropdown.DropdownMenuPortal>
-						</Dropdown.DropdownMenuSub>
+						<Dropdown.Sub>
+							<Dropdown.SubTrigger>Admin</Dropdown.SubTrigger>
+							<Dropdown.SubContent>
+								{#each adminLinks as item}
+									<Dropdown.Item>
+										<a
+											href={item.href}
+											class="flex w-full items-center gap-2"
+											style="order:{item.order}"
+										>
+											<item.icon />
+											{item.name}
+										</a>
+									</Dropdown.Item>
+								{/each}
+								<!-- <Dropdown.Separator /> -->
+							</Dropdown.SubContent>
+						</Dropdown.Sub>
 						<Dropdown.Item class="mt-1 flex items-center gap-2" variant="destructive">
 							<a href="/logout?next={page.url.pathname}" class="flex w-full items-center gap-2">
 								<LogOut class="h-4 w-4" />

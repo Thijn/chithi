@@ -1,12 +1,14 @@
-import { redirect } from '@sveltejs/kit';
 import { logout } from '$lib/remote/auth.remote';
+import { redirect } from '@sveltejs/kit';
 
-export const load = async ({ cookies, url }) => {
-	await logout();
+export const actions = {
+	default: async ({ url }) => {
+		await logout();
 
-	let next = url.searchParams.get('next') ?? '/';
-	if (next.startsWith('/admin')) {
-		next = '/';
+		let next = url.searchParams.get('next') ?? '/';
+		if (next.startsWith('/admin')) {
+			next = '/';
+		}
+		throw redirect(303, next);
 	}
-	throw redirect(303, next);
 };

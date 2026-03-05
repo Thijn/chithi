@@ -8,11 +8,10 @@
 	import { user_store } from '$lib/store/user.svelte';
 
 	const { user: userData } = useAuth();
-	const user_store_instance = user_store();
 	let { children } = $props();
 
 	$effect(() => {
-		if (user_store_instance.is_authenticated === null) {
+		if (user_store.is_authenticated === null) {
 			goto(`/login?next=${page.url.pathname}`);
 		}
 	});

@@ -16,13 +16,12 @@
 	import { user_store } from '$lib/store/user.svelte';
 
 	let { children, data }: { children: Snippet; data: LayoutData } = $props();
-	const user = user_store();
 
 	$effect.pre(() => {
 		if (data.user) {
-			user.authenticate();
+			user_store.authenticate();
 		} else {
-			user.unauthenticate();
+			user_store.unauthenticate();
 		}
 	});
 

@@ -3,8 +3,6 @@
 	import { page } from '$app/state';
 	import { onMount } from 'svelte';
 
-	const { unauthenticate } = user_store();
-
 	const next = $derived.by(() => {
 		const url = page.url.searchParams.get('next') ?? '/';
 		if (url.startsWith('/admin')) {
@@ -14,7 +12,7 @@
 	});
 
 	onMount(() => {
-		unauthenticate();
+		user_store.unauthenticate();
 		window.location.href = next;
 	});
 </script>

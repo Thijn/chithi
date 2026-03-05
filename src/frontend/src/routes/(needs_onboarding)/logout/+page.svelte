@@ -1,13 +1,12 @@
 <script lang="ts">
 	import { user_store } from '$lib/store/user.svelte';
-	import { onMount } from 'svelte';
-
+	import { enhance } from '$app/forms';
 	let formElement = $state<null | HTMLFormElement>(null);
 
-	onMount(() => {
+	$effect.pre(() => {
 		user_store.unauthenticate();
 		formElement?.requestSubmit();
 	});
 </script>
 
-<form bind:this={formElement} method="POST"></form>
+<form bind:this={formElement} method="POST" use:enhance></form>

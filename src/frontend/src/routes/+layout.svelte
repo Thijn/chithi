@@ -1,7 +1,8 @@
 <script lang="ts">
-	import '#css/tailwind.css';
-	import '#css/nprogress.scss';
 	import '#css/fonts.scss';
+	import '#css/nprogress.scss';
+	import '#css/tailwind.css';
+
 	import { afterNavigate, beforeNavigate } from '$app/navigation';
 	import { page } from '$app/state';
 	import NProgress from 'nprogress';
@@ -9,7 +10,6 @@
 	import { ModeWatcher } from 'mode-watcher';
 	import { QueryClientProvider } from '@tanstack/svelte-query';
 	import { Toaster } from '$lib/components/ui/sonner/index';
-	import { onMount } from 'svelte';
 	import type { LayoutData } from './$types';
 	import type { Snippet } from 'svelte';
 	import { MetaTags, deepMerge } from 'svelte-meta-tags';
@@ -25,7 +25,8 @@
 		}
 	});
 
-	onMount(() => {
+	// NProgress
+	$effect.pre(() => {
 		NProgress.done();
 	});
 	beforeNavigate(() => {

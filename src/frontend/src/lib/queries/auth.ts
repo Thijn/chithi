@@ -3,13 +3,14 @@ import { browser } from '$app/environment';
 import { login as loginRemote } from '$lib/remote/auth.remote';
 import { user_store } from '$lib/store/user.svelte';
 import { createQuery, useQueryClient } from '@tanstack/svelte-query';
-const { is_authenticated, authenticate, unauthenticate } = user_store();
+const user_store_instance = user_store();
 const queryKey = ['auth-user'];
 
 const resolveFetch = (fetch?: typeof globalThis.fetch) => fetch ?? globalThis.fetch;
 
 const fetchUser = async ({ fetch }: { fetch?: typeof globalThis.fetch }) => {
-	if (!is_authenticated) return null;
+	if (!user_store_instance.is_authenticated) return null;
+
 	const runtimeFetch = resolveFetch(fetch);
 	const res = await runtimeFetch(USER_URL, {
 		credentials: 'include'
@@ -44,10 +45,10 @@ export const useAuth = () => {
 		if (!browser) return;
 		try {
 			await loginRemote({ username, password });
-			authenticate();
+			user_store_instance.authenticate();
 			await queryClient.invalidateQueries({ queryKey });
 		} catch (error: any) {
-			unauthenticate();
+			user_store_instance.unauthenticate();
 			throw new Error(error?.message || 'Invalid username or password');
 		}
 	};

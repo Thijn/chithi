@@ -28,7 +28,7 @@
 	import { user_store } from '$lib/store/user.svelte';
 	const { user: userData } = useAuth();
 
-	const { is_authenticated } = user_store();
+	const user_store_instance = user_store();
 	let { children } = $props();
 
 	let initials = $derived(kebab_to_initials(userData.data?.username ?? ''));
@@ -148,7 +148,7 @@
 		</a>
 
 		<div class="flex items-center gap-2">
-			{#if is_authenticated}
+			{#if user_store_instance.is_authenticated}
 				<Dropdown.Root>
 					<Dropdown.Trigger>
 						<div class="my-0.5">

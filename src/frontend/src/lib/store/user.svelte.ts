@@ -1,4 +1,4 @@
-let authenticated: null | boolean = null;
+let authenticated = $state<null | boolean>(null);
 
 export const user_store = () => {
 	return {

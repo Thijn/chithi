@@ -56,7 +56,6 @@
 	let isPasswordProtected = $state(false);
 	let password = $state('');
 	let showPassword = $state(false);
-	let uploadProgress = $state(new Tween(0, { duration: 500, easing: cubicOut }));
 	let uploadingInProgress = $state(false);
 	let isUploadComplete = $state(false);
 	let finalLink = $state('');
@@ -66,10 +65,12 @@
 	let isViewOnce = $state(false);
 	let viewOnceLink = $state('');
 
-	// Encryption progress states
-	let encryptionProgress = $state(new Tween(0, { duration: 500, easing: cubicOut }));
 	let isEncrypting = $state(false);
 	let detailsMarkdown = $derived(configData.data?.site_description ?? '');
+
+	// Encryption progress states
+	let encryptionProgress = $state(new Tween(0, { duration: 500, easing: cubicOut }));
+	let uploadProgress = $state(new Tween(0, { duration: 500, easing: cubicOut }));
 
 	$effect(() => {
 		const total = files.reduce((sum, file) => sum + file.size, 0);
@@ -301,6 +302,44 @@
 		setTimeout(() => (isCopied = false), 2000);
 	};
 
+	const handlePaste = async (e: ClipboardEvent) => {
+		if (uploadingInProgress || isUploadComplete) return;
+
+		const items = e.clipboardData?.items;
+		if (!items) return;
+
+		let hasFiles = false;
+		for (let i = 0; i < items.length; i++) {
+			if (items[i].kind === 'file') {
+				hasFiles = true;
+				break;
+			}
+		}
+		if (!hasFiles) return;
+
+		e.preventDefault();
+
+		const promises: Array<Promise<Array<File>>> = new Array();
+		for (let i = 0; i < items.length; i++) {
+			const item = items[i];
+			if (item.kind !== 'file') continue;
+			// eslint-disable-next-line @typescript-eslint/no-explicit-any
+			const entry = (item as any).webkitGetAsEntry ? (item as any).webkitGetAsEntry() : null;
+			if (entry) {
+				promises.push(traverseFileTree(entry));
+			} else {
+				const file = item.getAsFile();
+				if (file) promises.push(Promise.resolve([file]));
+			}
+		}
+
+		const fileArrays = await Promise.all(promises);
+		const newFiles = fileArrays.flat();
+		if (newFiles.length > 0) {
+			addFiles(newFiles);
+		}
+	};
+
 	const handleUpload = async (viewOnce = false) => {
 		if (files.length === 0) return;
 		if (viewOnce && files.length !== 1) {
@@ -439,6 +478,7 @@
 	ondragover={handleWindowDragOver}
 	ondragleave={handleWindowDragLeave}
 	ondrop={handleWindowDrop}
+	onpaste={handlePaste}
 />
 
 {#snippet fileItem(file: File)}

@@ -4,7 +4,7 @@ from datetime import datetime, timezone
 from urllib.parse import quote
 
 from botocore.exceptions import ClientError
-from fastapi import APIRouter, Header, HTTPException, UploadFile, status, Request
+from fastapi import APIRouter, Header, HTTPException, Request, UploadFile, status
 from fastapi.responses import StreamingResponse
 from sqlmodel import col, select
 from types_aiobotocore_s3.type_defs import CompletedPartTypeDef
@@ -20,8 +20,8 @@ from app.schemas.reverse import (
     RoomOut,
 )
 from app.settings import settings
-from app.states.room import RoomState
 from app.states.app import UploadProgress
+from app.states.room import RoomState
 from app.tasks.clean_file import delete_expired_file
 from app.tasks.persist_file import persist_file_record
 
@@ -85,7 +85,6 @@ async def add_host(
 @router.post("/rooms/{room_id}/upload")
 async def upload_file_to_room(
     room_id: str,
-    file: UploadFile,
     file: UploadFile,
     request: Request,
     s3: S3Dep,
@@ -208,13 +207,13 @@ async def upload_file_to_room(
         filename=filename,
         size=uploaded_size,
         uploaded_at=now,
-        download_url=f"{settings.ROOT_PATH}/download/{file_key}",
+        download_url=str(request.app.url_path_for("download_files", key=file_key)),
     )
 
     # Persist in room state + fan-out event via pub/sub (atomic append)
     added = await RoomState.add_file(room_id, entry)
     if not added:
-        # Room vanished mid-upload — clean up the S3 object
+        # Room vanished mid-upload clean up the S3 object
         await s3.delete_object(Bucket=settings.RUSTFS_BUCKET_NAME, Key=file_key)
         # Remove in-flight upload from global state
         await UploadProgress.cancel(upload_key=file_key)

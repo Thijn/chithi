@@ -164,7 +164,7 @@ class RoomState(GlobalState):
             # Key doesn't exist (room expired) or path missing
             return False
 
-        # Fan-out notification — every subscribed instance picks this up
+        # Fan-out notification - every subscribed instance picks this up
         event = RoomFileEvent(event="file_added", file=entry)
         await cls._publish(_room_channel(room_id), event.model_dump_json())
         return True

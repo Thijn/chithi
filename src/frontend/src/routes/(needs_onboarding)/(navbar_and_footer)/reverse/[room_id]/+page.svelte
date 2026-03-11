@@ -389,7 +389,7 @@
 	onDestroy(cleanup);
 </script>
 
-<!-- ── Loading ── -->
+<!-- Loading -->
 {#if loadStatus === 'loading'}
 	<div class="flex min-h-[70vh] items-center justify-center">
 		<div class="flex items-center gap-3 text-muted-foreground">
@@ -398,7 +398,7 @@
 		</div>
 	</div>
 
-	<!-- ── Not found ── -->
+	<!-- Not found -->
 {:else if loadStatus === 'not_found'}
 	<div class="flex min-h-[70vh] items-center justify-center p-4">
 		<div class="space-y-4 text-center">
@@ -411,7 +411,7 @@
 		</div>
 	</div>
 
-	<!-- ── Error ── -->
+	<!-- Error -->
 {:else if loadStatus === 'error'}
 	<div class="flex min-h-[70vh] items-center justify-center p-4">
 		<div class="space-y-4 text-center">
@@ -427,7 +427,7 @@
 		</div>
 	</div>
 
-	<!-- ── Room ── -->
+	<!-- Room -->
 {:else if loadStatus === 'loaded' && room}
 	<div class="mx-auto max-w-3xl space-y-6 p-4">
 		<!-- Header -->
@@ -521,7 +521,7 @@
 
 		<Separator />
 
-		<!-- ── Host: file picker + upload ── -->
+		<!-- Host: file picker + upload -->
 		{#if isHost}
 			<Card>
 				<CardHeader>
@@ -673,7 +673,7 @@
 			</Card>
 		{/if}
 
-		<!-- ── Client: active stream progress ── -->
+		<!-- Client: active stream progress -->
 		{#if !isHost && receiveState.type === 'streaming'}
 			<Card>
 				<CardHeader>
@@ -694,7 +694,7 @@
 			</Card>
 		{/if}
 
-		<!-- ── Shared files list ── -->
+		<!-- Shared files list -->
 		<Card>
 			<CardHeader>
 				<CardTitle class="flex items-center justify-between text-base">
@@ -781,7 +781,7 @@
 			</CardContent>
 		</Card>
 
-		<!-- ── Client: received blobs ── -->
+		<!-- Client: received blobs -->
 		{#if !isHost && downloadedFiles.length > 0}
 			<Card>
 				<CardHeader>

@@ -49,5 +49,3 @@ async def login_endpoint(
     )
 
     return Token(access_token=token_string, token_type="bearer")
-
-

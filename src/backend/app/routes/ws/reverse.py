@@ -20,7 +20,7 @@ router = APIRouter()
 async def _stream_file_to_ws(ws: WebSocket, entry: RoomFileEntry) -> None:
     """Fetch a file from RustFS and relay every chunk to *ws*.
 
-    Mirrors the streaming pattern in ``download.py`` — the client receives raw
+    Mirrors the streaming pattern in ``download.py`` - the client receives raw
     bytes without ever knowing about the backing S3 store.
     """
     session = aioboto3.Session()
@@ -46,7 +46,7 @@ async def _stream_file_to_ws(ws: WebSocket, entry: RoomFileEntry) -> None:
             )
             return
 
-        # Header — tells the client which file is coming and how large it is
+        #  tells the client which file is coming and how large it is
         await ws.send_text(
             json.dumps(
                 {
@@ -58,14 +58,14 @@ async def _stream_file_to_ws(ws: WebSocket, entry: RoomFileEntry) -> None:
             )
         )
 
-        # Binary chunks — same as ``async for chunk in s3_response["Body"]``
+        # Binary chunks
         try:
             async for chunk in s3_response["Body"]:
                 await ws.send_bytes(chunk)
         finally:
             s3_response["Body"].close()
 
-        # Footer — signals the client that this file is complete
+        # signals the client that this file is complete
         await ws.send_text(json.dumps({"type": "file_end", "key": entry.key}))
 
 
@@ -87,7 +87,7 @@ async def room_ws(ws: WebSocket, room_id: str, host_token: str | None = None):
 
     await ws.accept()
 
-    # ── subscribe FIRST so no events are lost between snapshot and listen ──
+    # subscribe FIRST so no events are lost between snapshot and listen
     sub_client = aioredis.from_url(
         settings.REDIS_ENDPOINT, encoding="utf-8", decode_responses=True
     )
@@ -95,7 +95,7 @@ async def room_ws(ws: WebSocket, room_id: str, host_token: str | None = None):
     channel = RoomState.channel_for(room_id)
     await pubsub.subscribe(channel)
 
-    # ── snapshot (re-read after subscribe to guarantee consistency) ───
+    # snapshot (re-read after subscribe to guarantee consistency)
     room = await RoomState.get(room_id)
     if room is None:
         await pubsub.unsubscribe(channel)
@@ -137,14 +137,14 @@ async def room_ws(ws: WebSocket, room_id: str, host_token: str | None = None):
                 except Exception:
                     continue
 
-                # Host destroyed the room — notify client and close
+                # Host destroyed the room - notify client and close
                 if data.get("type") == "room_destroyed":
                     await ws.send_text(json.dumps({"type": "room_destroyed"}))
                     file_queue.put_nowait(None)
                     await ws.close(code=4001, reason="Room destroyed by host")
                     return
 
-                # Host count changed — forward directly
+                # Host count changed - forward directly
                 if data.get("type") == "host_count":
                     await ws.send_text(json.dumps(data))
                     continue
@@ -157,7 +157,7 @@ async def room_ws(ws: WebSocket, room_id: str, host_token: str | None = None):
 
                 if event.event == "file_added":
                     if event.file.key in seen_keys:
-                        # Already queued from the snapshot — skip duplicate
+                        # Already queued from the snapshot - skip duplicate
                         continue
                     seen_keys.add(event.file.key)
                     file_queue.put_nowait(event.file)
@@ -174,7 +174,7 @@ async def room_ws(ws: WebSocket, room_id: str, host_token: str | None = None):
         except WebSocketDisconnect, asyncio.CancelledError:
             pass
 
-    # ── streamer — pulls from queue and streams one file at a time ───
+    # pulls from queue and streams one file at a time
     async def _stream_queued_files() -> None:
         try:
             while True:
@@ -189,7 +189,7 @@ async def room_ws(ws: WebSocket, room_id: str, host_token: str | None = None):
     stream_task = asyncio.create_task(_stream_queued_files())
 
     try:
-        # Keep alive — read (and discard) client pings / messages
+        # Keep alive - read (and discard) client pings / messages
         while True:
             await ws.receive_text()
     except WebSocketDisconnect:

@@ -15,7 +15,7 @@ async def state_ws(ws: WebSocket):
         current: AppState = await AppState.get()
         await ws.send_text(current.model_dump_json())
 
-        # Keep the connection alive — read (and discard) client pings/messages
+        # Keep the connection alive - read (and discard) client pings/messages
         while True:
             await ws.receive_text()
     except WebSocketDisconnect:

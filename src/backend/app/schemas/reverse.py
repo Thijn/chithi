@@ -21,7 +21,7 @@ class RoomOut(BaseModel):
 
 
 class RoomCreateOut(RoomOut):
-    """Returned only once at room creation — includes the host secret."""
+    """Returned only once at room creation - includes the host secret."""
 
     host_token: str
 

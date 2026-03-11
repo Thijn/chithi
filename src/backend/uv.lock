@@ -406,7 +406,7 @@ dependencies = [
     { name = "sqlmodel" },
     { name = "typer" },
     { name = "types-aiobotocore-s3" },
-    { name = "uvicorn" },
+    { name = "uvicorn", extra = ["standard"] },
     { name = "uvloop", marker = "sys_platform == 'linux'" },
 ]
 
@@ -436,7 +436,7 @@ requires-dist = [
     { name = "sqlmodel", specifier = ">=0.0.27" },
     { name = "typer", specifier = ">=0.20.1" },
     { name = "types-aiobotocore-s3", specifier = ">=2.25.2" },
-    { name = "uvicorn", specifier = ">=0.40.0" },
+    { name = "uvicorn", extras = ["standard"], specifier = ">=0.40.0" },
     { name = "uvloop", marker = "sys_platform == 'linux'", specifier = ">=0.22.1" },
 ]
 

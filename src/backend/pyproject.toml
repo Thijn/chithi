@@ -11,7 +11,7 @@ dependencies = [
     # Faster Loops
     "uvloop>=0.22.1; sys_platform == 'linux'",
     # ASGI server
-    "uvicorn>=0.40.0",
+    "uvicorn[standard]>=0.40.0",
     # Password Hashinh
     "pwdlib[argon2]>=0.3.0",
     # Pydantic based settings manager

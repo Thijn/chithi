@@ -36,7 +36,7 @@ class File(FileOut, table=True):
     expires_at: datetime = Field(
         sa_column=Column(DateTime(timezone=True), nullable=False)
     )
-    expire_after_n_download: int = Field()
+    expire_after_n_download: int = Field(sa_column=Column(BigInteger()))
 
     # Tracking downloads
     download_count: int = Field(default=0, sa_column=Column(BigInteger()))

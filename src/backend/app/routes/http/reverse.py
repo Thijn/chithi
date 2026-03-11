@@ -23,7 +23,6 @@ from app.settings import settings
 from app.states.app import UploadProgress
 from app.states.room import RoomState
 from app.tasks.clean_file import delete_expired_file
-from app.tasks.persist_file import persist_file_record
 
 router = APIRouter(prefix="/reverse")
 
@@ -88,6 +87,7 @@ async def upload_file_to_room(
     file: UploadFile,
     request: Request,
     s3: S3Dep,
+    session: SessionDep,
     x_host_token: str = Header(),
 ) -> RoomFileEntry:
     if not await RoomState.verify_host(room_id, x_host_token):
@@ -193,14 +193,22 @@ async def upload_file_to_room(
     now = datetime.now(timezone.utc)
 
     # Persist File record + schedule cleanup in background (non-blocking)
-    persist_file_record.delay(
+    file_record = File(
         key=file_key,
         filename=filename,
         size=uploaded_size,
-        created_at=now.isoformat(),
-        expires_at=room.expires_at.isoformat(),
-        content_type=file.content_type or "application/octet-stream",
+        created_at=now,
+        expires_at=room.expires_at,
+        expire_after_n_download=2**63 - 1,
+        download_count=0,
     )
+
+    session.add(file_record)
+    await session.commit()
+    await session.refresh(file_record)
+
+    # Schedule async cleanup via Celery
+    delete_expired_file.apply_async((str(file_record.id),), eta=room.expires_at)
 
     entry = RoomFileEntry(
         key=file_key,

@@ -12,17 +12,31 @@
 	} from '$lib/components/ui/card';
 	import { Button } from '$lib/components/ui/button';
 	import { Input } from '$lib/components/ui/input';
+	import * as Select from '$lib/components/ui/select';
 	import { Label } from '$lib/components/ui/label';
 	import { Upload, Download, ArrowLeft, LoaderCircle } from 'lucide-svelte';
 	import { REVERSE_ROOMS_URL } from '#consts/backend';
+	import { useConfigQuery } from '#queries/config';
 
 	type LandingView = 'main' | 'create' | 'join';
 	let landingView = $state<LandingView>('main');
 
 	let roomName = $state('');
 	let expireAfter = $state(3600);
+	// empty string means "use server default"
+	let numberOfDownloads = $state('');
 	let joinId = $state('');
 	let isCreating = $state(false);
+
+	const { config: configData } = useConfigQuery();
+	let defaultDownloadLimitSet = $state(false);
+
+	$effect(() => {
+		if (configData.data?.default_number_of_downloads && !defaultDownloadLimitSet) {
+			numberOfDownloads = configData.data.default_number_of_downloads.toString();
+			defaultDownloadLimitSet = true;
+		}
+	});
 
 	$effect(() => {
 		const prefilledId = page.url.searchParams.get('join');
@@ -42,7 +56,11 @@
 			const res = await fetch(REVERSE_ROOMS_URL, {
 				method: 'POST',
 				headers: { 'Content-Type': 'application/json' },
-				body: JSON.stringify({ name: roomName.trim(), expire_after: expireAfter }),
+				body: JSON.stringify({
+					name: roomName.trim(),
+					expire_after: expireAfter,
+					number_of_downloads: numberOfDownloads === '' ? null : Number(numberOfDownloads)
+				}),
 				credentials: 'include'
 			});
 			if (!res.ok) {
@@ -127,6 +145,31 @@
 							bind:value={roomName}
 							onkeydown={(e) => e.key === 'Enter' && createRoom()}
 						/>
+					</div>
+					<div class="space-y-2">
+						<Label for="downloads">Number of downloads</Label>
+						<Select.Root type="single" bind:value={numberOfDownloads}>
+							<Select.Trigger class="w-full">
+								{numberOfDownloads === ''
+									? 'Use default'
+									: `${numberOfDownloads} ${numberOfDownloads === '1' ? 'download' : 'downloads'}`}
+							</Select.Trigger>
+							<Select.Content>
+								<Select.Item value="">Use default</Select.Item>
+								{#if configData.data?.download_configs}
+									{#each configData.data.download_configs as limit}
+										<Select.Item value={limit.toString()}
+											>{limit} {limit === 1 ? 'download' : 'downloads'}</Select.Item
+										>
+									{/each}
+								{:else}
+									<Select.Item value="1">1 download</Select.Item>
+								{/if}
+							</Select.Content>
+						</Select.Root>
+						<p class="text-xs text-muted-foreground">
+							Leave as "Use default" to apply server default.
+						</p>
 					</div>
 					<div class="space-y-2">
 						<Label for="expire">Expires after (seconds)</Label>

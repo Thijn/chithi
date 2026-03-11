@@ -3,11 +3,14 @@ import { browser } from '$app/environment';
 import { login as loginRemote } from '$lib/remote/auth.remote';
 import { user_store } from '$lib/store/user.svelte';
 import { createQuery, useQueryClient } from '@tanstack/svelte-query';
+
 const queryKey = ['auth-user'];
 
 const resolveFetch = (fetch?: typeof globalThis.fetch) => fetch ?? globalThis.fetch;
 
 const fetchUser = async ({ fetch }: { fetch?: typeof globalThis.fetch }) => {
+	if (!user_store.is_authenticated) return null;
+
 	const runtimeFetch = resolveFetch(fetch);
 	const res = await runtimeFetch(USER_URL, {
 		credentials: 'include'

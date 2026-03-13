@@ -24,6 +24,13 @@ jobs:
             - name: Set up Docker Buildx
               uses: docker/setup-buildx-action@v4
 
+            - name: Set up Python
+              uses: actions/setup-python@v4
+
+            - name: Inject Version
+              working-directory: ./src/frontend
+              run: python scripts/inject_version.py
+
             - name: Build Docker image
               uses: docker/build-push-action@v7
               with:

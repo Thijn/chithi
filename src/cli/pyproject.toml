@@ -10,7 +10,7 @@ dependencies = [
     # Http Client
     "requests>=2.32.0",
     # Encryption (AES-256-GCM + Argon2id KDF)
-    "cryptography>=44.0.0",
+    "cryptography==46.0.3",
     # ZIP with WinZip AES-256 support (matches web front-end)
     "pyzipper>=0.3.6",
     # Progress bars
@@ -31,7 +31,7 @@ build = ["nuitka>=2.8.9", "zstandard>=0.25.0"]
 dev = ["poethepoet>=0.39.0"]
 
 [tool.poe.tasks]
-nuitka-windows = "nuitka --standalone --onefile --clang --lto=yes --python-flag=-m --python-flag=-OO --disable-bytecode-cache --assume-yes-for-downloads --windows-icon-from-ico=./assets/logo.ico ./app"
+nuitka-windows = "nuitka --standalone --onefile --lto=yes --python-flag=-m --python-flag=-OO --disable-bytecode-cache --assume-yes-for-downloads --windows-icon-from-ico=./assets/logo.ico ./app"
 nuitka-linux = "nuitka --standalone --onefile --clang --lto=yes --python-flag=-m --python-flag=-OO --disable-bytecode-cache --assume-yes-for-downloads ./app"
 nuitka-debug = "nuitka --standalone --onefile --clang --lto=yes --debug --python-flag=-m --python-flag=-OO --disable-bytecode-cache --assume-yes-for-downloads ./app"
 

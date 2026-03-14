@@ -25,7 +25,7 @@ jobs:
         include:
           - os: ubuntu-latest
             platform: linux/amd64
-          - os: ubuntu-24.04-arm 
+          - os: ubuntu-latest-arm 
             platform: linux/arm64
     
     outputs:

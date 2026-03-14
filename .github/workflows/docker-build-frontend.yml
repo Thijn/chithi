@@ -1,4 +1,4 @@
-name: Frontend Docker Build
+name: Frontend Multi-Arch Build
 
 on:
   push:

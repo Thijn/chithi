@@ -3,7 +3,14 @@ name: Backend Multi-Arch Build
 on:
   push:
     branches: ['main']
-    paths: ['src/backend/**', '.github/workflows/**']
+    paths:
+      - 'src/backend/**'
+      - '.github/workflows/**'
+  pull_request:
+    branches: ['main']
+    paths:
+      - 'src/backend/**'
+      - '.github/workflows/**'
   workflow_dispatch:
 
 env:

@@ -7,7 +7,8 @@
 		SlidersVertical,
 		Link,
 		BookOpenText,
-		Gauge
+		Gauge,
+		Info
 	} from 'lucide-svelte';
 	import Button from '$lib/components/ui/button/button.svelte';
 	import { toggleMode } from 'mode-watcher';
@@ -15,17 +16,18 @@
 	import * as Dropdown from '$lib/components/ui/dropdown-menu';
 	import { useAuth } from '#queries/auth';
 	import { mode } from 'mode-watcher';
-	import { Label } from '$lib/components/ui/label/index';
-	import { Switch } from '$lib/components/ui/switch/index';
+	import { Label } from '$lib/components/ui/label';
+	import { Switch } from '$lib/components/ui/switch';
 	import { kebab_to_initials } from '#functions/string-conversion';
 	import { make_libravatar_url } from '#functions/libravatar';
 	import { page } from '$app/state';
-	import * as Tooltip from '$lib/components/ui/tooltip/index';
+	import * as Tooltip from '$lib/components/ui/tooltip';
 	import favicon from '$lib/assets/logo.svg';
 	import { PUBLIC_INSTANCE_URL } from '#consts/urls';
 	import { env } from '$env/dynamic/public';
 	import { SiGithub, SiUpptime } from '@icons-pack/svelte-simple-icons';
 	import { user_store } from '$lib/store/user.svelte';
+	import type { Component, ComponentType } from 'svelte';
 	const { user: userData } = useAuth();
 
 	let { children } = $props();
@@ -44,6 +46,12 @@
 			flagForRestart = !flagForRestart;
 		}
 	}
+	type LinkItem = {
+		name: string;
+		href: string;
+		icon: Component<any> | ComponentType;
+		order: number;
+	};
 
 	const adminLinks = [
 		{
@@ -66,7 +74,7 @@
 			order: 3
 		}
 	];
-	let footerLinks = $state([
+	let rightFooterLinks: LinkItem[] = $state([
 		{
 			href: '/speedtest',
 			name: 'Speedtest',
@@ -89,6 +97,14 @@
 			href: 'https://github.com/chithi-dev/chithi',
 			name: 'Source',
 			icon: SiGithub,
+			order: 1
+		}
+	]);
+	let leftFooterLinks: LinkItem[] = $state([
+		{
+			href: '/information',
+			name: 'Information about the instance',
+			icon: Info,
 			order: 1
 		}
 	]);
@@ -117,22 +133,53 @@
 	];
 
 	$effect.pre(() => {
-		donationPlatforms.forEach(({ key, name, iconModule }) => {
+		const seen = new Set(rightFooterLinks.map((l) => l.href));
+		const additions = donationPlatforms.flatMap(({ key, name, iconModule }) => {
 			const href = (env as Record<string, string | undefined>)[key];
+			if (!href || seen.has(href)) return [];
 
-			// Check if the environment variable exists and isn't already in the list
-			if (href && !footerLinks.some((link) => link.href === href)) {
-				footerLinks.push({
+			return [
+				{
 					href,
 					name,
-					// Use the .default property from the awaited import
 					icon: iconModule.default,
-					order: footerLinks.length + 1
-				});
-			}
+					order: rightFooterLinks.length + 1
+				}
+			];
 		});
+
+		if (additions.length > 0) {
+			rightFooterLinks = [
+				...rightFooterLinks,
+				...additions.map((item, i) => ({
+					...item,
+					order: rightFooterLinks.length + i + 1
+				}))
+			];
+		}
 	});
 </script>
+
+{#snippet footerLink(footer_item: LinkItem)}
+	<div style="order:{footer_item.order}">
+		<Tooltip.Provider delayDuration={100}>
+			<Tooltip.Root>
+				<Tooltip.Trigger>
+					<Button
+						variant="ghost"
+						size="icon"
+						aria-label={footer_item.name}
+						class="transition-colors hover:text-foreground"
+						href={footer_item.href}
+					>
+						<footer_item.icon />
+					</Button>
+				</Tooltip.Trigger>
+				<Tooltip.Content>{footer_item.name}</Tooltip.Content>
+			</Tooltip.Root>
+		</Tooltip.Provider>
+	</div>
+{/snippet}
 
 <div
 	class="relative flex min-h-svh min-w-screen flex-col overflow-hidden bg-background text-foreground"
@@ -240,29 +287,17 @@
 	<!-- Footer -->
 	<footer class="bg-transparent p-4 backdrop-blur-md transition-colors duration-500">
 		<div class="mx-auto w-full">
-			<nav
-				class="flex flex-row flex-wrap items-center justify-end gap-2 text-sm text-muted-foreground md:gap-6"
-			>
-				{#each footerLinks as footer_item}
-					<div style="order:{footer_item.order}">
-						<Tooltip.Provider delayDuration={100}>
-							<Tooltip.Root>
-								<Tooltip.Trigger
-									><Button
-										variant="ghost"
-										size="icon"
-										aria-label={footer_item.name}
-										class="transition-colors hover:text-foreground"
-										href={footer_item.href}
-									>
-										<footer_item.icon />
-									</Button></Tooltip.Trigger
-								>
-								<Tooltip.Content>{footer_item.name}</Tooltip.Content>
-							</Tooltip.Root>
-						</Tooltip.Provider>
-					</div>
-				{/each}
+			<nav class="flex flex-row items-center justify-between text-sm text-muted-foreground">
+				<div class="flex flex-wrap items-center gap-2 md:gap-6">
+					{#each leftFooterLinks as item}
+						{@render footerLink(item)}
+					{/each}
+				</div>
+				<div class="flex flex-wrap items-center gap-2 md:gap-6">
+					{#each rightFooterLinks as item}
+						{@render footerLink(item)}
+					{/each}
+				</div>
 			</nav>
 		</div>
 	</footer>

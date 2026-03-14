@@ -30,6 +30,10 @@ jobs:
     
     outputs:
       digest: ${{ steps.build.outputs.digest }}
+    
+    permissions:
+      contents: read
+      packages: write
 
     steps:
       - name: Checkout

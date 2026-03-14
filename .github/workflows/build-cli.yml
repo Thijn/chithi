@@ -12,6 +12,8 @@ on:
       - 'src/cli/**'
       - '.github/workflows/**'
   workflow_dispatch:
+  release:
+        types: [published]
 
 permissions:
   contents: write

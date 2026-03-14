@@ -12,6 +12,8 @@ on:
       - 'src/backend/**'
       - '.github/workflows/**'
   workflow_dispatch:
+  release:
+        types: [published]
 
 permissions:
     contents: read
@@ -109,10 +111,11 @@ jobs:
       - name: Create manifest list and push
         working-directory: /tmp/digests
         run: |
-          docker buildx imagetools create $(display_with_tags) \
-            $(printf '${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}@sha256:%s ' *)
-        env:
-          # This helper function formats the tags for the docker command
-          display_with_tags: >-
-            ${{ steps.meta.outputs.tags }}
-            ${{ steps.meta.outputs.tags != '' && '--tag ' || '' }}
+          # Create an array of tags prefixed with -t
+          TAG_ARGS=$(echo "${{ steps.meta.outputs.tags }}" | xargs -I {} echo "-t {}")
+          
+          # Create an array of digests prefixed with the image name
+          DIGEST_ARGS=$(printf '${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}@sha256:%s ' *)
+          
+          # Execute the command
+          docker buildx imagetools create $TAG_ARGS $DIGEST_ARGS

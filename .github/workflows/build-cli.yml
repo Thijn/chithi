@@ -29,7 +29,7 @@ jobs:
             target: linux-amd64
             asset_name: chithi-cli-linux-amd64
             build_cmd: nuitka-linux
-          - os: ubuntu-latest-arm
+          - os: ubuntu-24.04-arm
             target: linux-arm64
             asset_name: chithi-cli-linux-arm64
             build_cmd: nuitka-linux

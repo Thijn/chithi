@@ -94,12 +94,14 @@ jobs:
 
       - name: Extract metadata for final tags
         id: meta
-        uses: docker/metadata-action@v5
+        uses: docker/metadata-action@v6
         with:
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
           tags: |
+            type=ref,event=branch
             type=semver,pattern={{version}}
-            type=raw,value=latest
+            type=raw,value=latest,enable=${{ github.event_name == 'release' || startsWith(github.ref, 'refs/tags/v') }}
+
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3

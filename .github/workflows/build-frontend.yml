@@ -19,7 +19,7 @@ jobs:
         runs-on: ${{ matrix.os }}
         strategy:
             matrix:
-                os: [ubuntu-latest,ubuntu-24.04-arm, windows-latest, macos-latest, windows-latest-arm]
+                os: [ubuntu-latest,ubuntu-24.04-arm, windows-latest, macos-latest, windows-11-arm]
                 node-version: [latest]
 
         defaults:

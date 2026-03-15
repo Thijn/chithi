@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { onDestroy, onMount } from 'svelte';
 	import { goto } from '$app/navigation';
+	import { page } from '$app/stores';
 	import { cubicOut } from 'svelte/easing';
 	import { Tween } from 'svelte/motion';
 	import { toast } from 'svelte-sonner';
@@ -13,9 +14,12 @@
 		CardTitle
 	} from '$lib/components/ui/card';
 	import { Button } from '$lib/components/ui/button';
+	import { Input } from '$lib/components/ui/input';
+	import { Label } from '$lib/components/ui/label';
 	import { Progress } from '$lib/components/ui/progress';
 	import { Badge } from '$lib/components/ui/badge';
 	import { Separator } from '$lib/components/ui/separator';
+	import { ScrollArea } from '$lib/components/ui/scroll-area';
 	import * as Tooltip from '$lib/components/ui/tooltip/index';
 	import {
 		Download,
@@ -33,13 +37,14 @@
 	} from 'lucide-svelte';
 	import { formatFileSize } from '#functions/bytes';
 	import { REVERSE_ROOMS_URL, REVERSE_WS_URL } from '#consts/backend';
+	import { createDecryptedStream } from '#functions/streams';
+	import { resolve } from '$app/paths';
 
 	interface RoomFileEntry {
 		key: string;
 		filename: string;
 		size: number;
 		uploaded_at: string;
-		download_url: string;
 	}
 
 	interface RoomOut {
@@ -49,7 +54,6 @@
 		files: RoomFileEntry[];
 		host_count: number;
 	}
-
 	type ReceiveState =
 		| { type: 'idle' }
 		| {
@@ -77,9 +81,23 @@
 	}
 
 	let { room_id }: { room_id: string } = $props();
+	let roomKey = $state<string | null>(null);
+
+	$effect(() => {
+		const hash = $page.url.hash.slice(1);
+		if (hash) {
+			// This could be a host token or a room key. Accept any non-empty hash as the key.
+			const parts = hash.split(':');
+			roomKey = parts[0];
+		}
+	});
 
 	function fileDownloadUrl(fileKey: string): string {
 		return `${REVERSE_ROOMS_URL}/${room_id}/files/${fileKey}/download`;
+	}
+
+	function downloadPageHref(fileKey: string): string {
+		return resolve(`/download/${fileKey}${roomKey ? `#${roomKey}` : ''}`);
 	}
 
 	type LoadStatus = 'loading' | 'not_found' | 'error' | 'loaded';
@@ -125,6 +143,23 @@
 			: 0
 	);
 
+	// Encryption key prompt state
+	let showKeyPrompt = $state(false);
+	let keyInput = $state('');
+
+	function submitKey() {
+		const k = keyInput.trim();
+		if (!k) {
+			toast.error('Please enter an encryption key');
+			return;
+		}
+		roomKey = k;
+		showKeyPrompt = false;
+		toast.success('Encryption key set');
+		// After user provides key, load the room data and connect
+		loadRoom();
+	}
+
 	async function loadRoom() {
 		loadStatus = 'loading';
 		try {
@@ -142,6 +177,8 @@
 			roomFiles = [...data.files];
 			hostCount = data.host_count ?? 1;
 			loadStatus = 'loaded';
+			// If we don't already have a room key from the URL/hash, prompt the user
+			if (!roomKey) showKeyPrompt = true;
 			connectWebSocket();
 		} catch {
 			loadStatus = 'error';
@@ -167,7 +204,7 @@
 			toast.error('WebSocket connection error');
 		};
 
-		socket.onmessage = (ev) => {
+		socket.onmessage = async (ev) => {
 			if (ev.data instanceof ArrayBuffer || ev.data instanceof Blob) {
 				handleBinaryChunk(ev.data);
 				return;
@@ -234,8 +271,26 @@
 				}
 			} else if (type === 'file_end' && receiveState.type === 'streaming') {
 				const { key, filename, size, chunks } = receiveState;
-				const blob = new Blob(chunks);
-				const objectUrl = URL.createObjectURL(blob);
+
+				let finalBlob: Blob;
+				if (roomKey) {
+					try {
+						const encryptedBlob = new Blob(chunks);
+						const { stream: decryptedStream } = await createDecryptedStream(
+							encryptedBlob.stream() as any,
+							roomKey
+						);
+						const decryptedBlob = await new Response(decryptedStream as any).blob();
+						finalBlob = decryptedBlob;
+					} catch (e) {
+						toast.error(`Decryption failed for ${filename}`);
+						finalBlob = new Blob(chunks);
+					}
+				} else {
+					finalBlob = new Blob(chunks);
+				}
+
+				const objectUrl = URL.createObjectURL(finalBlob);
 				downloadedFiles = [...downloadedFiles, { key, filename, size, objectUrl }];
 				receiveState = { type: 'idle' };
 				toast.success(`Received: ${filename}`);
@@ -259,12 +314,13 @@
 		const buf = data instanceof Blob ? await data.arrayBuffer() : data;
 		if (receiveState.type !== 'streaming') return;
 		const chunk = new Uint8Array(buf);
-		receiveState.chunks.push(buf);
+		receiveState.chunks.push(buf as any);
 		receiveState.received += chunk.byteLength;
 	}
 
 	async function copyShareLink() {
-		await navigator.clipboard.writeText(shareUrl);
+		const url = roomKey ? `${shareUrl}#${roomKey}` : shareUrl;
+		await navigator.clipboard.writeText(url);
 		copiedShareLink = true;
 		setTimeout(() => (copiedShareLink = false), 2000);
 	}
@@ -287,7 +343,7 @@
 		if (downloaded?.objectUrl) {
 			const a = document.createElement('a');
 			a.href = downloaded.objectUrl;
-			a.download = downloaded.filename;
+			a.download = f.filename;
 			a.click();
 			return;
 		}
@@ -310,14 +366,22 @@
 			const res = await fetch(fileDownloadUrl(f.key), { credentials: 'include' });
 
 			if (!res.ok) throw new Error(`HTTP ${res.status}`);
-			const reader = res.body?.getReader();
-			if (!reader) throw new Error('Streaming not supported');
+			if (!res.body) throw new Error('No response body');
 
+			let streamWithProgress: ReadableStream<Uint8Array> = res.body as any;
+			if (roomKey) {
+				const { stream: decryptedStream } = await createDecryptedStream(res.body as any, roomKey);
+				streamWithProgress = decryptedStream;
+			}
+
+			const reader = streamWithProgress.getReader();
 			while (true) {
 				const { done, value } = await reader.read();
 				if (done) break;
-				receiveState.chunks.push(value);
-				receiveState.received += value.byteLength;
+				if (value) {
+					receiveState.chunks.push(value as any);
+					receiveState.received += value.byteLength;
+				}
 			}
 
 			const blob = new Blob(receiveState.chunks);
@@ -345,11 +409,68 @@
 		});
 	}
 
-	onMount(loadRoom);
+	// Utility to display filename (strip .zip if present)
+	function getDisplayFilename(filename: string): string {
+		return filename.endsWith('.zip') ? filename.slice(0, -4) : filename;
+	}
+
+	onMount(() => {
+		// Re-check hash on mount (ensure key from URL is captured)
+		const hash = $page.url.hash.slice(1);
+		if (hash) {
+			const parts = hash.split(':');
+			if (parts.length > 1) {
+				roomKey = parts[1];
+			} else if (parts[0]) {
+				roomKey = parts[0];
+			}
+		}
+		if (roomKey) {
+			loadRoom();
+		} else {
+			// Ask for key first, then loadRoom after submission
+			showKeyPrompt = true;
+		}
+	});
 	onDestroy(cleanup);
 </script>
 
-{#if loadStatus === 'loading'}
+{#if showKeyPrompt}
+	<div class="flex min-h-[70vh] items-center justify-center p-4">
+		<div class="w-full max-w-2xl">
+			<Card>
+				<CardHeader>
+					<CardTitle class="flex items-center gap-2">
+						<Download class="h-5 w-5" />
+						Enter Room Key
+					</CardTitle>
+				</CardHeader>
+				<CardContent class="space-y-4">
+					<div class="space-y-2">
+						<Label for="room-key">Room Key</Label>
+						<Input
+							id="room-key"
+							type="password"
+							placeholder="Paste room key here"
+							bind:value={keyInput}
+							onkeydown={(e) => e.key === 'Enter' && submitKey()}
+						/>
+					</div>
+					<p class="text-sm text-muted-foreground">
+						This key is required to decrypt files sent to this room.
+					</p>
+				</CardContent>
+				<CardFooter class="flex gap-2">
+					<Button variant="outline" onclick={() => goto('/reverse')}>
+						<ArrowLeft class="mr-1 h-4 w-4" />
+						Back
+					</Button>
+					<Button onclick={submitKey} class="flex-1">Enter Key</Button>
+				</CardFooter>
+			</Card>
+		</div>
+	</div>
+{:else if loadStatus === 'loading'}
 	<div class="flex min-h-[70vh] items-center justify-center">
 		<div class="flex items-center gap-3 text-muted-foreground">
 			<LoaderCircle class="h-6 w-6 animate-spin" />
@@ -384,22 +505,23 @@
 {:else if loadStatus === 'loaded' && room}
 	{#if downloadPreference === null}
 		<div class="mx-auto flex min-h-[60vh] max-w-2xl flex-col items-center justify-center p-4">
-			<div class="mb-8 text-center space-y-2">
+			<div class="mb-8 space-y-2 text-center">
 				<h2 class="text-3xl font-bold tracking-tight">How should we handle downloads?</h2>
-				<p class="text-muted-foreground text-lg">
+				<p class="text-lg text-muted-foreground">
 					Choose how you want to receive files from the host.
 				</p>
 			</div>
 
 			<div class="grid w-full gap-6 sm:grid-cols-2">
 				<Card
-					class="relative cursor-pointer transition-all hover:border-primary/50 hover:shadow-lg border-2 border-primary bg-primary/5"
+					class="relative cursor-pointer border-2 border-primary bg-primary/5 transition-all hover:border-primary/50 hover:shadow-lg"
 					onclick={() => (downloadPreference = 'eager')}
 				>
 					<div class="absolute -top-3 left-1/2 -translate-x-1/2">
-						<Badge class="bg-primary text-primary-foreground px-3 py-1 shadow-md">Recommended</Badge>
+						<Badge class="bg-primary px-3 py-1 text-primary-foreground shadow-md">Recommended</Badge
+						>
 					</div>
-					<CardHeader class="flex flex-col items-center text-center pb-2 pt-8">
+					<CardHeader class="flex flex-col items-center pt-8 pb-2 text-center">
 						<div class="mb-3 rounded-full bg-primary/20 p-4">
 							<Zap class="h-8 w-8 text-primary" />
 						</div>
@@ -415,10 +537,10 @@
 				</Card>
 
 				<Card
-					class="cursor-pointer transition-all hover:border-primary/50 hover:shadow-lg border-2 border-transparent"
+					class="cursor-pointer border-2 border-transparent transition-all hover:border-primary/50 hover:shadow-lg"
 					onclick={() => (downloadPreference = 'manual')}
 				>
-					<CardHeader class="flex flex-col items-center text-center pb-2 pt-8">
+					<CardHeader class="flex flex-col items-center pt-8 pb-2 text-center">
 						<div class="mb-3 rounded-full bg-muted p-4">
 							<MousePointerClick class="h-8 w-8 text-muted-foreground" />
 						</div>
@@ -524,81 +646,97 @@
 							<span>Waiting for host to share files…</span>
 						</div>
 					{:else}
-						<div class="space-y-2">
-							{#each remoteUploads as u}
-								<div class="space-y-1 rounded-md border px-3 py-2 bg-muted/20">
-									<div class="flex items-center gap-2">
-										<FileIcon class="h-4 w-4 shrink-0 text-muted-foreground" />
-										<span class="min-w-0 flex-1 truncate text-sm">{u.filename}</span>
-										<span class="shrink-0 text-xs text-muted-foreground">
-											{formatFileSize(u.uploadedBytes)} / {formatFileSize(u.size)}
-										</span>
-										<LoaderCircle class="h-4 w-4 shrink-0 animate-spin text-muted-foreground" />
-									</div>
-									<Progress value={u.progress.current} max={100} class="h-1" />
-								</div>
-							{/each}
-
-							{#each roomFiles as f}
-								{@const downloaded = downloadedFiles.find((d) => d.key === f.key)}
-								{@const isStreaming = receiveState.type === 'streaming' && receiveState.key === f.key}
-								<div class="rounded-md border px-3 py-2">
-									<div class="flex items-center gap-3">
-										<FileIcon class="h-4 w-4 shrink-0 text-muted-foreground" />
-										<div class="min-w-0 flex-1">
-											<div class="flex items-center gap-2">
-												<p class="truncate text-sm font-medium">{f.filename}</p>
-												{#if downloaded}
-													<Badge
-														variant="outline"
-														class="h-4 px-1 text-[10px] uppercase text-green-600 border-green-200 bg-green-50"
-													>
-														Saved
-													</Badge>
-												{/if}
-											</div>
-											<p class="text-xs text-muted-foreground">{formatFileSize(f.size)}</p>
+						<ScrollArea class="max-h-96 w-full rounded-md border p-2">
+							<div class="space-y-2">
+								{#each remoteUploads as u}
+									<div class="space-y-1 rounded-md border bg-muted/20 px-3 py-2">
+										<div class="flex items-center gap-2">
+											<FileIcon class="h-4 w-4 shrink-0 text-muted-foreground" />
+											<span class="min-w-0 flex-1 truncate text-sm"
+												>{getDisplayFilename(u.filename)}</span
+											>
+											<span class="shrink-0 text-xs text-muted-foreground">
+												{formatFileSize(u.uploadedBytes)} / {formatFileSize(u.size)}
+											</span>
+											<LoaderCircle class="h-4 w-4 shrink-0 animate-spin text-muted-foreground" />
 										</div>
+										<Progress value={u.progress.current} max={100} class="h-1" />
+									</div>
+								{/each}
 
+								{#each roomFiles as f}
+									{@const downloaded = downloadedFiles.find((d) => d.key === f.key)}
+									{@const isStreaming =
+										receiveState.type === 'streaming' && receiveState.key === f.key}
+									{@const displayName = getDisplayFilename(f.filename)}
+									<div class="rounded-md border px-3 py-2">
+										<div class="flex items-center gap-3">
+											<FileIcon class="h-4 w-4 shrink-0 text-muted-foreground" />
+											<div class="min-w-0 flex-1">
+												<div class="flex items-center gap-2">
+													<p class="truncate text-sm font-medium">
+														{displayName}
+													</p>
+													{#if downloaded}
+														<Badge
+															variant="outline"
+															class="h-4 border-green-200 bg-green-50 px-1 text-[10px] text-green-600 uppercase"
+														>
+															Saved
+														</Badge>
+													{/if}
+												</div>
+												<p class="text-xs text-muted-foreground">{formatFileSize(f.size)}</p>
+											</div>
+
+											{#if isStreaming}
+												<div class="flex items-center gap-2 text-xs text-muted-foreground">
+													<span class="animate-pulse">Receiving…</span>
+													<span class="font-mono">{streamProgress.toFixed(0)}%</span>
+												</div>
+											{/if}
+
+											<div class="flex items-center gap-1">
+												<Button
+													size="sm"
+													variant="ghost"
+													class="h-7 shrink-0 px-2"
+													onclick={() => copyDownloadLink(f.key, downloadPageHref(f.key))}
+												>
+													{#if copiedFileKeys.has(f.key)}
+														<Check class="h-3.5 w-3.5 text-green-500" />
+													{:else}
+														<Copy class="h-3.5 w-3.5" />
+													{/if}
+												</Button>
+
+												<Button
+													size="sm"
+													variant={downloaded ? 'default' : 'outline'}
+													class="h-7 shrink-0 gap-1 px-2 text-xs"
+													onclick={() => downloadFile(f)}
+													disabled={receiveState.type === 'streaming' && receiveState.key !== f.key}
+												>
+													<Download class="h-3.5 w-3.5" />
+													{downloaded ? 'Save' : 'Download'}
+												</Button>
+
+												<a
+													href={downloadPageHref(f.key)}
+													class="inline-flex h-7 shrink-0 items-center gap-1 px-2 text-xs"
+												>
+													<Link class="h-3.5 w-3.5" />
+													<span>Download Page</span>
+												</a>
+											</div>
+										</div>
 										{#if isStreaming}
-											<div class="flex items-center gap-2 text-xs text-muted-foreground">
-												<span class="animate-pulse">Receiving…</span>
-												<span class="font-mono">{streamProgress.toFixed(0)}%</span>
-											</div>
+											<Progress value={streamProgress} max={100} class="mt-2 h-1" />
 										{/if}
-
-										<div class="flex items-center gap-1">
-											<Button
-												size="sm"
-												variant="ghost"
-												class="h-7 shrink-0 px-2"
-												onclick={() => copyDownloadLink(f.key, fileDownloadUrl(f.key))}
-											>
-												{#if copiedFileKeys.has(f.key)}
-													<Check class="h-3.5 w-3.5 text-green-500" />
-												{:else}
-													<Copy class="h-3.5 w-3.5" />
-												{/if}
-											</Button>
-
-											<Button
-												size="sm"
-												variant={downloaded ? 'default' : 'outline'}
-												class="h-7 shrink-0 gap-1 px-2 text-xs"
-												onclick={() => downloadFile(f)}
-												disabled={receiveState.type === 'streaming' && receiveState.key !== f.key}
-											>
-												<Download class="h-3.5 w-3.5" />
-												{downloaded ? 'Save' : 'Download'}
-											</Button>
-										</div>
 									</div>
-									{#if isStreaming}
-										<Progress value={streamProgress} max={100} class="mt-2 h-1" />
-									{/if}
-								</div>
-							{/each}
-						</div>
+								{/each}
+							</div>
+						</ScrollArea>
 					{/if}
 				</CardContent>
 			</Card>

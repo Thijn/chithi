@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { onDestroy, onMount } from 'svelte';
 	import { goto } from '$app/navigation';
+	import { page } from '$app/stores';
 	import { cubicOut } from 'svelte/easing';
 	import { Tween } from 'svelte/motion';
 	import { toast } from 'svelte-sonner';
@@ -12,6 +13,8 @@
 		CardHeader,
 		CardTitle
 	} from '$lib/components/ui/card';
+	import { ScrollArea } from '$lib/components/ui/scroll-area';
+
 	import { Button } from '$lib/components/ui/button';
 	import { Progress } from '$lib/components/ui/progress';
 	import { Badge } from '$lib/components/ui/badge';
@@ -35,6 +38,13 @@
 	} from 'lucide-svelte';
 	import { formatFileSize } from '#functions/bytes';
 	import { REVERSE_ROOMS_URL, REVERSE_WS_URL } from '#consts/backend';
+	import {
+		createZipStream,
+		createEncryptedStream,
+		createDecryptedStream
+	} from '#functions/streams';
+	import { base64urlToBytes } from '#functions/encryption';
+	import { resolve } from '$app/paths';
 
 	interface RoomFileEntry {
 		key: string;
@@ -85,10 +95,28 @@
 		progress: Tween<number>;
 	}
 
-	let { room_id, hostToken }: { room_id: string; hostToken: string } = $props();
+	let { room_id }: { room_id: string } = $props();
+	let hostToken = $state('');
+	let roomKey = $state<string | null>(null);
+
+	$effect(() => {
+		const hash = $page.url.hash.slice(1);
+		if (hash) {
+			const parts = hash.split(':');
+			hostToken = parts[0];
+			if (parts.length > 1) {
+				roomKey = parts[1];
+			}
+		}
+	});
 
 	function fileDownloadUrl(fileKey: string): string {
 		return `${REVERSE_ROOMS_URL}/${room_id}/files/${fileKey}/download`;
+	}
+
+	function downloadPageHref(fileKey: string): string {
+		console.log(fileKey);
+		return resolve(`/download/${fileKey}${roomKey ? `#${roomKey}` : ''}`);
 	}
 
 	type LoadStatus = 'loading' | 'not_found' | 'error' | 'loaded';
@@ -248,7 +276,7 @@
 		const buf = data instanceof Blob ? await data.arrayBuffer() : data;
 		if (receiveState.type !== 'streaming') return;
 		const chunk = new Uint8Array(buf);
-		receiveState.chunks.push(buf);
+		receiveState.chunks.push(buf as any);
 		receiveState.received += chunk.byteLength;
 	}
 
@@ -263,6 +291,10 @@
 
 	async function uploadAll() {
 		if (!room || pendingFiles.length === 0) return;
+		if (!roomKey) {
+			toast.error('Cannot upload to an unencrypted room.');
+			return;
+		}
 		isUploading = true;
 		overallProgress = new Tween(0, { duration: 400, easing: cubicOut });
 
@@ -274,12 +306,26 @@
 		uploads = [...uploads, ...batch];
 		pendingFiles = [];
 
+		const ikm = base64urlToBytes(roomKey);
+
 		for (const entry of batch) {
 			entry.status = 'uploading';
 			uploads = uploads;
 
 			try {
-				const fileEntry = await uploadFileXhr(entry.file, (pct) => {
+				const zipStream = await createZipStream([entry.file]);
+				const { stream: encryptedStream } = await createEncryptedStream(
+					zipStream,
+					undefined,
+					undefined,
+					undefined,
+					ikm
+				);
+
+				const encryptedBlob = await new Response(encryptedStream).blob();
+				const filename = `${entry.file.name}.zip`;
+
+				const fileEntry = await uploadFileXhr(encryptedBlob, filename, (pct) => {
 					entry.progress.target = pct;
 					const done = uploads.filter((u) => u.status === 'done').length;
 					overallProgress.target = ((done + pct / 100) / batch.length) * 100;
@@ -303,10 +349,14 @@
 		isUploading = false;
 	}
 
-	function uploadFileXhr(file: File, onProgress: (pct: number) => void): Promise<RoomFileEntry> {
+	function uploadFileXhr(
+		file: Blob,
+		filename: string,
+		onProgress: (pct: number) => void
+	): Promise<RoomFileEntry> {
 		return new Promise((resolve, reject) => {
 			const fd = new FormData();
-			fd.append('file', file, file.name);
+			fd.append('file', file, filename);
 
 			const xhr = new XMLHttpRequest();
 			xhr.open('POST', `${REVERSE_ROOMS_URL}/${room_id}/upload`);
@@ -341,7 +391,8 @@
 	}
 
 	async function copyShareLink() {
-		await navigator.clipboard.writeText(shareUrl);
+		const url = roomKey ? `${shareUrl}#${roomKey}` : shareUrl;
+		await navigator.clipboard.writeText(url);
 		copiedShareLink = true;
 		setTimeout(() => (copiedShareLink = false), 2000);
 	}
@@ -359,7 +410,9 @@
 				throw new Error((err as { detail?: string }).detail ?? `HTTP ${res.status}`);
 			}
 			const data = (await res.json()) as { host_token: string };
-			const inviteUrl = `${window.location.origin}/reverse/${room_id}#${data.host_token}`;
+			const inviteUrl = roomKey
+				? `${window.location.origin}/reverse/${room_id}#${data.host_token}:${roomKey}`
+				: `${window.location.origin}/reverse/${room_id}#${data.host_token}`;
 			await navigator.clipboard.writeText(inviteUrl);
 			copiedInviteLink = true;
 			toast.success('Host invite link copied to clipboard');
@@ -389,7 +442,7 @@
 		if (downloaded?.objectUrl) {
 			const a = document.createElement('a');
 			a.href = downloaded.objectUrl;
-			a.download = downloaded.filename;
+			a.download = f.filename;
 			a.click();
 			return;
 		}
@@ -415,14 +468,23 @@
 			});
 
 			if (!res.ok) throw new Error(`HTTP ${res.status}`);
-			const reader = res.body?.getReader();
-			if (!reader) throw new Error('Streaming not supported');
+			if (!res.body) throw new Error('No response body');
 
+			let streamWithProgress: ReadableStream<Uint8Array> = res.body as any;
+
+			if (roomKey) {
+				const { stream: decryptedStream } = await createDecryptedStream(res.body as any, roomKey);
+				streamWithProgress = decryptedStream;
+			}
+
+			const reader = streamWithProgress.getReader();
 			while (true) {
 				const { done, value } = await reader.read();
 				if (done) break;
-				receiveState.chunks.push(value);
-				receiveState.received += value.byteLength;
+				if (value) {
+					receiveState.chunks.push(value as any);
+					receiveState.received += value.byteLength;
+				}
 			}
 
 			const blob = new Blob(receiveState.chunks);
@@ -452,6 +514,11 @@
 
 	onMount(loadRoom);
 	onDestroy(cleanup);
+
+	// Utility to display filename (strip .zip if present)
+	function getDisplayFilename(filename: string): string {
+		return filename.endsWith('.zip') ? filename.slice(0, -4) : filename;
+	}
 </script>
 
 {#if loadStatus === 'loading'}
@@ -611,31 +678,36 @@
 				</div>
 
 				{#if pendingFiles.length > 0}
-					<div class="space-y-2">
-						<p class="text-xs font-medium tracking-wide text-muted-foreground uppercase">
-							Queued — {formatFileSize(totalUploadSize)}
-						</p>
-						{#each pendingFiles as file, i}
-							<div class="flex items-center gap-3 rounded-md border px-3 py-2">
-								<FileIcon class="h-4 w-4 shrink-0 text-muted-foreground" />
-								<span class="min-w-0 flex-1 truncate text-sm">{file.name}</span>
-								<span class="shrink-0 text-xs text-muted-foreground">{formatFileSize(file.size)}</span>
-								<button
-									class="shrink-0 text-muted-foreground hover:text-destructive"
-									onclick={() => removePendingFile(i)}
-									aria-label="Remove"
-								>
-									<X class="h-4 w-4" />
-								</button>
-							</div>
-						{/each}
-					</div>
+					<ScrollArea class="max-h-64 w-full rounded-md border p-2">
+						<div class="space-y-2">
+							<p class="text-xs font-medium tracking-wide text-muted-foreground uppercase">
+								Queued — {formatFileSize(totalUploadSize)}
+							</p>
+							{#each pendingFiles as file, i}
+								<div class="flex items-center gap-3 rounded-md border px-3 py-2">
+									<FileIcon class="h-4 w-4 shrink-0 text-muted-foreground" />
+									<span class="min-w-0 flex-1 truncate text-sm">{file.name}</span>
+									<span class="shrink-0 text-xs text-muted-foreground"
+										>{formatFileSize(file.size)}</span
+									>
+									<button
+										class="shrink-0 text-muted-foreground hover:text-destructive"
+										onclick={() => removePendingFile(i)}
+										aria-label="Remove"
+									>
+										<X class="h-4 w-4" />
+									</button>
+								</div>
+							{/each}
+						</div>
+					</ScrollArea>
 				{/if}
 
 				{#if isUploading || (uploads.length > 0 && completedUploads < totalUploads)}
 					<div class="space-y-1">
 						<div class="flex justify-between text-xs">
-							<span class="text-muted-foreground">Overall — {completedUploads}/{totalUploads} files</span
+							<span class="text-muted-foreground"
+								>Overall — {completedUploads}/{totalUploads} files</span
 							>
 							<span class="text-muted-foreground">{overallProgress.current.toFixed(0)}%</span>
 						</div>
@@ -670,7 +742,11 @@
 				{/if}
 			</CardContent>
 			<CardFooter>
-				<Button onclick={uploadAll} disabled={pendingFiles.length === 0 || isUploading} class="w-full">
+				<Button
+					onclick={uploadAll}
+					disabled={pendingFiles.length === 0 || isUploading}
+					class="w-full"
+				>
 					{#if isUploading}
 						<LoaderCircle class="mr-2 h-4 w-4 animate-spin" />
 						Uploading…
@@ -702,81 +778,97 @@
 						<span>No files uploaded yet.</span>
 					</div>
 				{:else}
-					<div class="space-y-2">
-						{#each remoteUploads as u}
-							<div class="space-y-1 rounded-md border px-3 py-2 bg-muted/20">
-								<div class="flex items-center gap-2">
-									<FileIcon class="h-4 w-4 shrink-0 text-muted-foreground" />
-									<span class="min-w-0 flex-1 truncate text-sm">{u.filename}</span>
-									<span class="shrink-0 text-xs text-muted-foreground">
-										{formatFileSize(u.uploadedBytes)} / {formatFileSize(u.size)}
-									</span>
-									<LoaderCircle class="h-4 w-4 shrink-0 animate-spin text-muted-foreground" />
-								</div>
-								<Progress value={u.progress.current} max={100} class="h-1" />
-							</div>
-						{/each}
-
-						{#each roomFiles as f}
-							{@const downloaded = downloadedFiles.find((d) => d.key === f.key)}
-							{@const isStreaming = receiveState.type === 'streaming' && receiveState.key === f.key}
-							<div class="rounded-md border px-3 py-2">
-								<div class="flex items-center gap-3">
-									<FileIcon class="h-4 w-4 shrink-0 text-muted-foreground" />
-									<div class="min-w-0 flex-1">
-										<div class="flex items-center gap-2">
-											<p class="truncate text-sm font-medium">{f.filename}</p>
-											{#if downloaded}
-												<Badge
-													variant="outline"
-													class="h-4 px-1 text-[10px] uppercase text-green-600 border-green-200 bg-green-50"
-												>
-													Saved
-												</Badge>
-											{/if}
-										</div>
-										<p class="text-xs text-muted-foreground">{formatFileSize(f.size)}</p>
+					<ScrollArea class="max-h-96 w-full rounded-md border p-2">
+						<div class="space-y-2">
+							{#each remoteUploads as u}
+								<div class="space-y-1 rounded-md border bg-muted/20 px-3 py-2">
+									<div class="flex items-center gap-2">
+										<FileIcon class="h-4 w-4 shrink-0 text-muted-foreground" />
+										<span class="min-w-0 flex-1 truncate text-sm"
+											>{getDisplayFilename(u.filename)}</span
+										>
+										<span class="shrink-0 text-xs text-muted-foreground">
+											{formatFileSize(u.uploadedBytes)} / {formatFileSize(u.size)}
+										</span>
+										<LoaderCircle class="h-4 w-4 shrink-0 animate-spin text-muted-foreground" />
 									</div>
+									<Progress value={u.progress.current} max={100} class="h-1" />
+								</div>
+							{/each}
 
+							{#each roomFiles as f}
+								{@const downloaded = downloadedFiles.find((d) => d.key === f.key)}
+								{@const isStreaming =
+									receiveState.type === 'streaming' && receiveState.key === f.key}
+								{@const displayName = getDisplayFilename(f.filename)}
+								<div class="rounded-md border px-3 py-2">
+									<div class="flex items-center gap-3">
+										<FileIcon class="h-4 w-4 shrink-0 text-muted-foreground" />
+										<div class="min-w-0 flex-1">
+											<div class="flex items-center gap-2">
+												<p class="truncate text-sm font-medium">
+													{displayName}
+												</p>
+												{#if downloaded}
+													<Badge
+														variant="outline"
+														class="h-4 border-green-200 bg-green-50 px-1 text-[10px] text-green-600 uppercase"
+													>
+														Saved
+													</Badge>
+												{/if}
+											</div>
+											<p class="text-xs text-muted-foreground">{formatFileSize(f.size)}</p>
+										</div>
+
+										{#if isStreaming}
+											<div class="flex items-center gap-2 text-xs text-muted-foreground">
+												<span class="animate-pulse">Receiving…</span>
+												<span class="font-mono">{streamProgress.toFixed(0)}%</span>
+											</div>
+										{/if}
+
+										<div class="flex items-center gap-1">
+											<Button
+												size="sm"
+												variant="ghost"
+												class="h-7 shrink-0 px-2"
+												onclick={() => copyDownloadLink(f.key, downloadPageHref(f.key))}
+											>
+												{#if copiedFileKeys.has(f.key)}
+													<Check class="h-3.5 w-3.5 text-green-500" />
+												{:else}
+													<Copy class="h-3.5 w-3.5" />
+												{/if}
+											</Button>
+
+											<Button
+												size="sm"
+												variant={downloaded ? 'default' : 'outline'}
+												class="h-7 shrink-0 gap-1 px-2 text-xs"
+												onclick={() => downloadFile(f)}
+												disabled={receiveState.type === 'streaming' && receiveState.key !== f.key}
+											>
+												<Download class="h-3.5 w-3.5" />
+												{downloaded ? 'Save' : 'Download'}
+											</Button>
+
+											<a
+												href={downloadPageHref(f.key)}
+												class="inline-flex h-7 shrink-0 items-center gap-1 px-2 text-xs"
+											>
+												<Link class="h-3.5 w-3.5" />
+												<span>Download Page</span>
+											</a>
+										</div>
+									</div>
 									{#if isStreaming}
-										<div class="flex items-center gap-2 text-xs text-muted-foreground">
-											<span class="animate-pulse">Receiving…</span>
-											<span class="font-mono">{streamProgress.toFixed(0)}%</span>
-										</div>
+										<Progress value={streamProgress} max={100} class="mt-2 h-1" />
 									{/if}
-
-									<div class="flex items-center gap-1">
-										<Button
-											size="sm"
-											variant="ghost"
-											class="h-7 shrink-0 px-2"
-											onclick={() => copyDownloadLink(f.key, fileDownloadUrl(f.key))}
-										>
-											{#if copiedFileKeys.has(f.key)}
-												<Check class="h-3.5 w-3.5 text-green-500" />
-											{:else}
-												<Copy class="h-3.5 w-3.5" />
-											{/if}
-										</Button>
-
-										<Button
-											size="sm"
-											variant={downloaded ? 'default' : 'outline'}
-											class="h-7 shrink-0 gap-1 px-2 text-xs"
-											onclick={() => downloadFile(f)}
-											disabled={receiveState.type === 'streaming' && receiveState.key !== f.key}
-										>
-											<Download class="h-3.5 w-3.5" />
-											{downloaded ? 'Save' : 'Download'}
-										</Button>
-									</div>
 								</div>
-								{#if isStreaming}
-									<Progress value={streamProgress} max={100} class="mt-2 h-1" />
-								{/if}
-							</div>
-						{/each}
-					</div>
+							{/each}
+						</div>
+					</ScrollArea>
 				{/if}
 			</CardContent>
 		</Card>

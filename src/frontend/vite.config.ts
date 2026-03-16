@@ -4,6 +4,7 @@ import { playwright } from '@vitest/browser-playwright';
 import fs from 'node:fs';
 import path from 'node:path';
 import { defineConfig } from 'vitest/config';
+import integrityPlugin from './plugins/vite-plugin-integrity-gpg';
 
 const buildInfoPath = path.resolve('./build-info.json');
 let buildInfo = { version: 'v0.0.0', commit: 'unknown' };
@@ -17,7 +18,7 @@ export default defineConfig({
 		__APP_VERSION__: JSON.stringify(buildInfo.version),
 		__COMMIT_SHA__: JSON.stringify(buildInfo.commit)
 	},
-	plugins: [tailwindcss(), sveltekit()],
+	plugins: [tailwindcss(), sveltekit(), integrityPlugin()],
 	worker: {
 		format: 'es'
 	},

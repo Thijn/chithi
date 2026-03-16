@@ -4,6 +4,9 @@
     "config:recommended"
   ],
   "ignoreDeps": ["cryptography"],
+      "lockFileMaintenance": {
+        "enabled": true
+    },
   "packageRules": [
     {
       "groupName": "all dependencies",

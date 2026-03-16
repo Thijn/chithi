@@ -5,6 +5,7 @@ import uuid
 from datetime import datetime, timedelta, timezone
 
 from app.schemas.reverse import (
+    ActiveUpload,
     AddHostOut,
     RoomCreateOut,
     RoomFileEntry,
@@ -20,19 +21,14 @@ local raw = redis.call('JSON.GET', KEYS[1], '$.files')
 if not raw then return nil end
 local outer = cjson.decode(raw)
 local files = outer[1]
-local removed = nil
-local new_files = {}
-for _, f in ipairs(files) do
+for i, f in ipairs(files) do
     if f['key'] == ARGV[1] then
-        removed = cjson.encode(f)
-    else
-        new_files[#new_files + 1] = f
+        local removed = cjson.encode(f)
+        redis.call('JSON.DEL', KEYS[1], '$.files[' .. (i-1) .. ']')
+        return removed
     end
 end
-if removed then
-    redis.call('JSON.SET', KEYS[1], '$.files', cjson.encode(new_files))
-end
-return removed
+return nil
 """
 
 
@@ -67,6 +63,7 @@ class RoomState(GlobalState):
             "created_at": now.isoformat(),
             "expires_at": (now + timedelta(seconds=expire_after)).isoformat(),
             "files": [],
+            "active_uploads": [],
             "host_token_hashes": [token_hash],
             "number_of_downloads": number_of_downloads,
         }
@@ -100,6 +97,15 @@ class RoomState(GlobalState):
         hashes = data.pop("host_token_hashes", [])
         data.pop("host_token_hash", None)  # compat with old format
         data["host_count"] = len(hashes) if isinstance(hashes, list) else 1
+        
+        hosts_count, guests_count = await cls.get_connection_counts(room_id)
+        data["connected_hosts"] = hosts_count
+        data["connected_guests"] = guests_count
+        
+        if not isinstance(data.get("active_uploads"), list):
+            data["active_uploads"] = []
+        if not isinstance(data.get("files"), list):
+            data["files"] = []
         # Ensure a default for number_of_downloads for backward compatibility
         if "number_of_downloads" not in data:
             data["number_of_downloads"] = None
@@ -222,3 +228,81 @@ class RoomState(GlobalState):
     @classmethod
     async def publish_event(cls, room_id: str, message: str) -> None:
         await cls._publish(_room_channel(room_id), message)
+    @classmethod
+    def _hosts_set_key(cls, room_id: str) -> str:
+        return f"chithi:room:{room_id}:hosts:online"
+
+    @classmethod
+    def _guests_set_key(cls, room_id: str) -> str:
+        return f"chithi:room:{room_id}:guests:online"
+
+    @classmethod
+    async def add_active_upload(cls, room_id: str, upload_key: str, filename: str, size: int) -> None:
+        key = _room_key(room_id)
+        entry = ActiveUpload(upload_key=upload_key, filename=filename, size=size)
+        try:
+            await cls._client().execute_command("JSON.ARRAPPEND", key, "$.active_uploads", json.dumps(entry.model_dump(mode="json")))
+        except Exception:
+            return
+
+    @classmethod
+    async def update_active_upload(cls, room_id: str, upload_key: str, uploaded_bytes: int) -> None:
+        key = _room_key(room_id)
+        script = """
+        local raw = redis.call('JSON.GET', KEYS[1], '$.active_uploads')
+        if not raw then return nil end
+        local outer = cjson.decode(raw)
+        local uploads = outer[1]
+        for i, u in ipairs(uploads) do
+            if u['upload_key'] == ARGV[1] then
+                redis.call('JSON.SET', KEYS[1], '$.active_uploads[' .. (i-1) .. '].uploaded_bytes', ARGV[2])
+                return 1
+            end
+        end
+        return nil
+        """
+        await cls._client().eval(script, 1, key, upload_key, uploaded_bytes)
+
+    @classmethod
+    async def remove_active_upload(cls, room_id: str, upload_key: str) -> None:
+        key = _room_key(room_id)
+        script = """
+        local raw = redis.call('JSON.GET', KEYS[1], '$.active_uploads')
+        if not raw then return nil end
+        local outer = cjson.decode(raw)
+        local uploads = outer[1]
+        for i, u in ipairs(uploads) do
+            if u['upload_key'] == ARGV[1] then
+                redis.call('JSON.DEL', KEYS[1], '$.active_uploads[' .. (i-1) .. ']')
+                return 1
+            end
+        end
+        return nil
+        """
+        await cls._client().eval(script, 1, key, upload_key)
+
+    @classmethod
+    async def client_online(cls, room_id: str, client_id: str, is_host: bool) -> None:
+        key = cls._hosts_set_key(room_id) if is_host else cls._guests_set_key(room_id)
+        client = cls._client()
+        await client.sadd(key, client_id)
+        await client.expire(key, 3600)
+        
+        hosts_count, guests_count = await cls.get_connection_counts(room_id)
+        await cls.publish_event(room_id, json.dumps({"type": "connection_counts", "hosts": hosts_count, "guests": guests_count}))
+
+    @classmethod
+    async def client_offline(cls, room_id: str, client_id: str, is_host: bool) -> None:
+        key = cls._hosts_set_key(room_id) if is_host else cls._guests_set_key(room_id)
+        client = cls._client()
+        await client.srem(key, client_id)
+        
+        hosts_count, guests_count = await cls.get_connection_counts(room_id)
+        await cls.publish_event(room_id, json.dumps({"type": "connection_counts", "hosts": hosts_count, "guests": guests_count}))
+
+    @classmethod
+    async def get_connection_counts(cls, room_id: str) -> tuple[int, int]:
+        client = cls._client()
+        hosts = await client.scard(cls._hosts_set_key(room_id))
+        guests = await client.scard(cls._guests_set_key(room_id))
+        return hosts, guests

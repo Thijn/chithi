@@ -4,6 +4,9 @@ import json
 from pathlib import Path
 import os
 
+script_dir = Path(__file__).resolve().parent.parent
+out_path = script_dir / "build-info.json"
+
 
 def git(cmd: str):
     """Run a git command and return its output, or None on failure"""
@@ -37,9 +40,6 @@ else:
         version = f"v0.0.0-{commit}"
 
 # Write Output
-out_path = Path("src/frontend/build-info.json")
-out_path.parent.mkdir(parents=True, exist_ok=True)
-
 build_data = {"version": version, "commit": commit, "is_release": gh_ref_type == "tag"}
 
 with open(out_path, "w") as f:

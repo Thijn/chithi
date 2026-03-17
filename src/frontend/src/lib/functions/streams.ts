@@ -2,7 +2,6 @@ import { WORKER_CONCURRENCY } from '#consts/concurrency';
 import DecryptWorker from '#workers/decrypt.worker?worker';
 import EncryptWorker from '#workers/encrypt.worker?worker';
 import { ZipWriter, configure } from '@zip.js/zip.js';
-import { v7 as uuidv7 } from 'uuid';
 import {
 	CHUNK_SIZE,
 	argon2Derive,
@@ -322,17 +321,17 @@ async function writeZipFiles(
 				return name;
 			}
 
-			// Use uuidv7 to generate a collision-resistant suffix
-			const id = uuidv7();
+			const count = usedNames.get(name) || 1;
+			usedNames.set(name, count + 1);
 
 			// Preserve extension when adding suffix
 			const lastDot = name.lastIndexOf('.');
 			if (lastDot > 0) {
 				const base = name.slice(0, lastDot);
 				const ext = name.slice(lastDot);
-				return `${base}-${id}${ext}`;
+				return `${base}_${count}${ext}`;
 			}
-			return `${name}-${id}`;
+			return `${name}_${count}`;
 		};
 
 		for (const file of files) {

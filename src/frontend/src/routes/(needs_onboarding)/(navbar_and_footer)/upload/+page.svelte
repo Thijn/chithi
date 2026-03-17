@@ -12,9 +12,9 @@
 	import { Button } from '$lib/components/ui/button';
 	import { fly, fade } from 'svelte/transition';
 
-	let Stage1 = await import('./stage_1.svelte').then((m) => m.default);
-	let Stage2 = await import('./stage_2.svelte').then((m) => m.default);
-	let Stage3 = await import('./stage_3.svelte').then((m) => m.default);
+	const Stage1 = await import('./stage_1.svelte').then((m) => m.default);
+	const Stage2 = await import('./stage_2.svelte').then((m) => m.default);
+	const Stage3 = await import('./stage_3.svelte').then((m) => m.default);
 
 	const { config: configData } = useConfigQuery();
 
@@ -35,6 +35,7 @@
 
 	// Handle physical mouse back button (X1) to return from stage 2 to stage 1
 	const handleMouseBack = (e: MouseEvent) => {
+		// button 3 is the "Back" button on most mice
 		if (e.button === 3 && stage === 2) {
 			stage = 1;
 			e.preventDefault();
@@ -192,6 +193,7 @@
 	const onFilesSelected = (newFiles: File[]) => {
 		files = [...files, ...newFiles];
 		stage = 2;
+		window.history.pushState({ stage: 2 }, '');
 	};
 
 	const onUploadComplete = (result: {
@@ -201,12 +203,22 @@
 	}) => {
 		uploadResult = result;
 		stage = 3;
+		window.history.pushState({ stage: 3 }, '');
 	};
 
 	const onReset = () => {
 		files = [];
 		uploadResult = null;
 		stage = 1;
+		window.history.pushState({ stage: 1 }, '');
+	};
+
+	const handlePopState = (e: PopStateEvent) => {
+		if (e.state && typeof e.state.stage === 'number') {
+			stage = e.state.stage;
+		} else {
+			stage = 1;
+		}
 	};
 </script>
 
@@ -218,6 +230,7 @@
 	onpaste={handlePaste}
 	onauxclick={handleMouseBack}
 	onpointerdown={handleMouseBack}
+	onpopstate={handlePopState}
 />
 
 {#snippet encryptionInfo()}

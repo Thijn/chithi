@@ -47,9 +47,6 @@
 	let isDraggingOverCard = $state(false);
 	let isDraggingOverZone = $state(false);
 	let dragCounter = $state(0);
-	// counters to correctly track nested dragenter/dragleave events
-	let zoneDragCounter = $state(0);
-	let cardDragCounter = $state(0);
 	let files = $state(new Array<File>());
 	let isUploading = $state(false);
 	let totalSize = $state('0 Bytes');
@@ -153,8 +150,6 @@
 		isDragging = false;
 		isDraggingOverZone = false;
 		isDraggingOverCard = false;
-		zoneDragCounter = 0;
-		cardDragCounter = 0;
 		if (e.dataTransfer?.types.includes('Files')) {
 			toast.error('File/folder must be dropped into the bordered area in the dashed circle');
 		}
@@ -162,32 +157,30 @@
 
 	const handleCardDragEnter = (e: DragEvent) => {
 		e.preventDefault();
-		cardDragCounter++;
 		isDraggingOverCard = true;
 	};
 
 	const handleCardDragLeave = (e: DragEvent) => {
-		e.preventDefault();
-		cardDragCounter--;
-		if (cardDragCounter <= 0) {
-			cardDragCounter = 0;
-			isDraggingOverCard = false;
+		const currentTarget = e.currentTarget as Node;
+		const relatedTarget = e.relatedTarget as Node;
+		if (currentTarget && relatedTarget && currentTarget.contains(relatedTarget)) {
+			return;
 		}
+		isDraggingOverCard = false;
 	};
 
 	const handleZoneDragEnter = (e: DragEvent) => {
 		e.preventDefault();
-		zoneDragCounter++;
 		isDraggingOverZone = true;
 	};
 
 	const handleZoneDragLeave = (e: DragEvent) => {
-		e.preventDefault();
-		zoneDragCounter--;
-		if (zoneDragCounter <= 0) {
-			zoneDragCounter = 0;
-			isDraggingOverZone = false;
+		const currentTarget = e.currentTarget as Node;
+		const relatedTarget = e.relatedTarget as Node;
+		if (currentTarget && relatedTarget && currentTarget.contains(relatedTarget)) {
+			return;
 		}
+		isDraggingOverZone = false;
 	};
 
 	const traverseFileTree = async (item: any, path = ''): Promise<File[]> => {
@@ -269,8 +262,6 @@
 		isDragging = false;
 		isDraggingOverZone = false;
 		isDraggingOverCard = false;
-		zoneDragCounter = 0;
-		cardDragCounter = 0;
 		dragCounter = 0;
 
 		const items = e.dataTransfer?.items;
@@ -303,8 +294,6 @@
 		isDragging = false;
 		isDraggingOverZone = false;
 		isDraggingOverCard = false;
-		zoneDragCounter = 0;
-		cardDragCounter = 0;
 		dragCounter = 0;
 		toast.error('File/Folder must be dropped in the bordered area');
 	};

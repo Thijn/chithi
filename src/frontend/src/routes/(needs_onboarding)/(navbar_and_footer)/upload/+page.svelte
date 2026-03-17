@@ -808,7 +808,14 @@
 							</Tooltip.Provider>
 						</div>
 						<ScrollArea
-							class="mb-4 h-60 max-h-[45vh] w-full rounded-lg border border-border bg-card lg:max-h-[50vh] lg:flex-1"
+							class={cn(
+								'mb-4 h-60 max-h-[45vh] w-full rounded-lg border border-border bg-card transition-colors lg:max-h-[50vh] lg:flex-1',
+								isDraggingOverZone && 'bg-primary/5'
+							)}
+							ondragenter={handleZoneDragEnter}
+							ondragleave={handleZoneDragLeave}
+							ondragover={(e) => e.preventDefault()}
+							ondrop={handleZoneDrop}
 						>
 							<div class="p-4">
 								{#each files as file}

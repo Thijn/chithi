@@ -11,14 +11,21 @@
 	import { QueryClientProvider } from '@tanstack/svelte-query';
 	import { Toaster } from '$lib/components/ui/sonner/index';
 	import type { LayoutData } from './$types';
-	import type { Snippet } from 'svelte';
+	import { type Component, type Snippet } from 'svelte';
 	import { MetaTags, deepMerge } from 'svelte-meta-tags';
 	import { user_store } from '$lib/store/user.svelte';
-	import { SvelteQueryDevtools } from '@tanstack/svelte-query-devtools';
 	import { logout } from '$lib/remote/auth.remote';
 	import { TOKEN_VALIDATE_URL } from '#consts/backend';
 	import { browser } from '$app/environment';
+	import { dev } from '$app/environment';
+
 	let { children, data }: { children: Snippet; data: LayoutData } = $props();
+
+	let SvelteQueryDevtools = $state<Component<any> | null>(null);
+	if (dev) {
+		const mod = await import('@tanstack/svelte-query-devtools');
+		SvelteQueryDevtools = mod.SvelteQueryDevtools;
+	}
 
 	if (browser) {
 		$effect.pre(() => {
@@ -66,7 +73,9 @@
 
 <ModeWatcher />
 <QueryClientProvider client={data.queryClient}>
-	<SvelteQueryDevtools buttonPosition="top-left" />
+	{#if SvelteQueryDevtools}
+		<SvelteQueryDevtools buttonPosition="top-left" />
+	{/if}
 
 	{@render children()}
 </QueryClientProvider>

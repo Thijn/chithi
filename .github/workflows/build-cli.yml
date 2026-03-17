@@ -50,10 +50,11 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v6
-        
-      - name: ccache
-        uses: hendrikmuhs/ccache-action@v1.2
 
+      - name: sccache
+        uses: mozilla-actions/sccache-action@v0.0.4
+
+        
       - name: Install uv
         uses: astral-sh/setup-uv@v7
 

@@ -24,7 +24,9 @@ export default defineConfig({
 		sveltekit(),
 		visualizer({
 			emitFile: true,
-			filename: 'stats.html'
+			filename: 'stats.html',
+			gzipSize: true,
+			brotliSize: true
 		})
 	],
 	worker: {

@@ -776,33 +776,49 @@
 					<!-- Upload Interface -->
 					<!-- Left Column: File List and Controls -->
 					<div class="flex h-full w-full flex-col pb-2">
-						<!-- Back button to return to initial drop area (stage 1) -->
-						{#if !uploadingInProgress}
-							<Button variant="ghost" size="sm" class="mb-2" onclick={() => (isUploading = false)}>
-								<ArrowLeft class="mr-2 h-4 w-4" />
-								Back
-							</Button>
-						{/if}
-						<!-- File List -->
-						<div class="mb-2 flex items-center justify-end gap-2">
-							{#if files.length > 1}
-								<Input bind:value={folderName} class="h-8 w-48" placeholder="Folder Name" />
-							{/if}
-							<Tooltip.Provider>
-								<Tooltip.Root>
-									<Tooltip.Trigger
-										class={`${buttonVariants({ variant: 'ghost' })} cursor-pointer`}
-										onclick={() => {
-											clearAllFiles();
-										}}
-									>
-										<Trash2 class="h-4 w-4" />
-									</Tooltip.Trigger>
-									<Tooltip.Content>
-										<p>Clear all files</p>
-									</Tooltip.Content>
-								</Tooltip.Root>
-							</Tooltip.Provider>
+						<!-- File List with Back button on the left -->
+						<div class="mb-2 flex items-center justify-between gap-2">
+							<div>
+								{#if !uploadingInProgress}
+									<Tooltip.Provider>
+										<Tooltip.Root>
+											<Tooltip.Trigger>
+												<Button
+													variant="ghost"
+													size="sm"
+													class="mb-2"
+													onclick={() => (isUploading = false)}
+												>
+													<ArrowLeft class="mr-2 h-4 w-4" />
+													Back
+												</Button>
+											</Tooltip.Trigger>
+											<Tooltip.Content>Return to file selection (stage 1)</Tooltip.Content>
+										</Tooltip.Root>
+									</Tooltip.Provider>
+								{/if}
+							</div>
+
+							<div class="flex items-center gap-2">
+								{#if files.length > 1}
+									<Input bind:value={folderName} class="h-8 w-48" placeholder="Folder Name" />
+								{/if}
+								<Tooltip.Provider>
+									<Tooltip.Root>
+										<Tooltip.Trigger
+											class={`${buttonVariants({ variant: 'ghost' })} cursor-pointer`}
+											onclick={() => {
+												clearAllFiles();
+											}}
+										>
+											<Trash2 class="h-4 w-4" />
+										</Tooltip.Trigger>
+										<Tooltip.Content>
+											<p>Clear all files</p>
+										</Tooltip.Content>
+									</Tooltip.Root>
+								</Tooltip.Provider>
+							</div>
 						</div>
 						<ScrollArea
 							class={cn(

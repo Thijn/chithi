@@ -21,6 +21,27 @@ configure({
 const HKDF_SALT_STR = 'chithi-salt-v1';
 const HKDF_IV_STR = 'chithi-iv-v1';
 
+const usedNames = new Map<string, number>();
+
+const makeUnique = (name: string) => {
+	if (!usedNames.has(name)) {
+		usedNames.set(name, 1);
+		return name;
+	}
+
+	const count = usedNames.get(name) || 1;
+	usedNames.set(name, count + 1);
+
+	// Preserve extension when adding suffix
+	const lastDot = name.lastIndexOf('.');
+	if (lastDot > 0) {
+		const base = name.slice(0, lastDot);
+		const ext = name.slice(lastDot);
+		return `${base}_${count}${ext}`;
+	}
+	return `${name}_${count}`;
+};
+
 async function deriveSecrets(ikm: Uint8Array, password?: string) {
 	// Derive deterministic salt from IKM
 	const enc = new TextEncoder();
@@ -313,27 +334,6 @@ async function writeZipFiles(
 	signal?: AbortSignal
 ): Promise<void> {
 	try {
-		const usedNames = new Map<string, number>();
-
-		const makeUnique = (name: string) => {
-			if (!usedNames.has(name)) {
-				usedNames.set(name, 1);
-				return name;
-			}
-
-			const count = usedNames.get(name) || 1;
-			usedNames.set(name, count + 1);
-
-			// Preserve extension when adding suffix
-			const lastDot = name.lastIndexOf('.');
-			if (lastDot > 0) {
-				const base = name.slice(0, lastDot);
-				const ext = name.slice(lastDot);
-				return `${base}_${count}${ext}`;
-			}
-			return `${name}_${count}`;
-		};
-
 		for (const file of files) {
 			let filename = (file as any).relativePath || file.name;
 			filename = makeUnique(filename);

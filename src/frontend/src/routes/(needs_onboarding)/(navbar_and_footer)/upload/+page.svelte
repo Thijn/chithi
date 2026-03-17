@@ -485,10 +485,7 @@
 				size: totalSize
 			});
 
-			// copy link and show success toast
-			navigator.clipboard.writeText(viewOnce ? viewOnceLink : finalLink);
-			isCopied = true;
-			setTimeout(() => (isCopied = false), 2000);
+			// show success toast
 			toast.success(viewOnce ? 'View Once link created' : 'Upload complete');
 		} catch (err: any) {
 			console.error('Upload failed', err);

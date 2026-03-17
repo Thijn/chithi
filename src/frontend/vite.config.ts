@@ -3,6 +3,7 @@ import tailwindcss from '@tailwindcss/vite';
 import { playwright } from '@vitest/browser-playwright';
 import fs from 'node:fs';
 import path from 'node:path';
+import { visualizer } from 'rollup-plugin-visualizer';
 import { defineConfig } from 'vitest/config';
 
 const buildInfoPath = path.resolve('./build-info.json');
@@ -17,18 +18,22 @@ export default defineConfig({
 		__APP_VERSION__: JSON.stringify(buildInfo.version),
 		__COMMIT_SHA__: JSON.stringify(buildInfo.commit)
 	},
-	plugins: [tailwindcss(), sveltekit()],
+
+	plugins: [
+		tailwindcss(),
+		sveltekit(),
+		visualizer({
+			emitFile: true,
+			filename: 'stats.html'
+		})
+	],
 	worker: {
 		format: 'es'
 	},
+
 	build: {
 		sourcemap: true,
-		minify: 'terser',
-		rolldownOptions: {
-			output: {
-				// minify: true
-			}
-		}
+		minify: 'terser'
 	},
 
 	test: {

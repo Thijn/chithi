@@ -127,7 +127,12 @@
 	const handleWindowDragEnter = (e: DragEvent) => {
 		e.preventDefault();
 		dragCounter++;
-		if (e.dataTransfer) e.dataTransfer.dropEffect = 'copy';
+		if (e.dataTransfer) {
+			e.dataTransfer.dropEffect = 'copy';
+			if (isUploadComplete && e.dataTransfer.types.includes('Files')) {
+				clearAllFiles();
+			}
+		}
 		isDragging = true;
 	};
 

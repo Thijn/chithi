@@ -69,8 +69,11 @@ nav = [
     { "Frontend" = [
         { "Architecture" = "frontend/architecture.md" },
         { "Environment" = "frontend/environment.md" },
-
         { "License" = "frontend/license.md" },
+    ] },
+    { "CLI" = [
+        { "Environment" = "cli/environment.md" },
+        { "License" = "cli/license.md" },
     ] },
     { "Transparency" = [
         { "AI" = "transparency/ai.md" },

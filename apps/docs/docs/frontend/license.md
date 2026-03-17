@@ -3,6 +3,8 @@ title: License
 icon: lucide/scale
 ---
 
+<!-- Copied from : https://github.com/IQAndreas/markdown-licenses/blob/66202b51f3cfa74d8008e395f89d403a7f5a27ed/mpl-v2.0.md -->
+
 # Mozilla Public License Version 2.0
 
 ### 1. Definitions

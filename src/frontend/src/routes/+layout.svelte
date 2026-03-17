@@ -17,10 +17,13 @@
 	import { SvelteQueryDevtools } from '@tanstack/svelte-query-devtools';
 	import { logout } from '$lib/remote/auth.remote';
 	import { TOKEN_VALIDATE_URL } from '#consts/backend';
+	import { browser } from '$app/environment';
 	let { children, data }: { children: Snippet; data: LayoutData } = $props();
 
-	$effect.pre(() => {
-		if (data.token) {
+	if (browser) {
+		$effect.pre(() => {
+			if (!data.token) return;
+
 			void fetch(TOKEN_VALIDATE_URL, {
 				credentials: 'include'
 			})
@@ -35,8 +38,8 @@
 					console.log(`Error while fetching token data`);
 					user_store.unauthenticate();
 				});
-		}
-	});
+		});
+	}
 
 	// NProgress
 	$effect.pre(() => {

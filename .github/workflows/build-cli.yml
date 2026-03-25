@@ -55,9 +55,6 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v6
 
-      - name: Setup sccache
-        uses: mozilla-actions/sccache-action@v0.0.9
-
       - name: Install uv
         uses: astral-sh/setup-uv@v7
 

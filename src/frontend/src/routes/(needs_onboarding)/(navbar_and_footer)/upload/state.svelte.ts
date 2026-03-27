@@ -28,8 +28,7 @@ let reconnectTimer: ReturnType<typeof setTimeout> | null = null;
 let refCount = 0;
 
 function getWsUrl(): string {
-	const base = Api.BASE.replace(/^http/, 'ws');
-	return `${base}/ws/state`;
+	return Api.STATE_WS;
 }
 
 function connect() {

@@ -8,9 +8,18 @@ export class Api {
 	static #root = new URL(env.PUBLIC_BACKEND_API ?? 'http://localhost:8000/');
 
 	/**
-	 * Internal helper to build absolute URLs.
+	 * Internal helper to build absolute HTTP URLs.
 	 */
 	static #url = (path: string) => new URL(path, this.#root).href;
+
+	/**
+	 * Internal helper to build absolute WebSocket URLs.
+	 */
+	static #ws = (path: string) => {
+		const ws = new URL(path, this.#root);
+		ws.protocol = this.#root.protocol === 'https:' ? 'wss:' : 'ws:';
+		return ws;
+	};
 
 	// --- Core Routes ---
 	static get BASE() {
@@ -33,6 +42,13 @@ export class Api {
 	}
 	static get UPLOAD() {
 		return this.#url('upload');
+	}
+
+	/**
+	 * App state WebSocket URL.
+	 */
+	static get STATE_WS() {
+		return this.#ws('ws/state').href;
 	}
 
 	// --- Parameterized Routes ---
@@ -65,8 +81,7 @@ export class Api {
 			 * Builds a WebSocket URL for a room.
 			 */
 			WS_URL: (id: string, token?: string) => {
-				const ws = new URL(`ws/reverse/rooms/${id}`, this.#root);
-				ws.protocol = this.#root.protocol === 'https:' ? 'wss:' : 'ws:';
+				const ws = this.#ws(`ws/reverse/rooms/${id}`);
 				if (token) ws.searchParams.set('host_token', token);
 				return ws.href;
 			}

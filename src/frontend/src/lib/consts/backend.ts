@@ -1,11 +1,14 @@
+import { strip_trailing_slash } from '#functions/urls';
 import { env } from '$env/dynamic/public';
+
+const envrionment_variable = env.PUBLIC_BACKEND_API ?? 'http://localhost:8000';
 
 /**
  * Single source of truth for the Backend API.
  * Uses the native URL API to handle slashes and protocols safely.
  */
 export class Api {
-	static #root = new URL(env.PUBLIC_BACKEND_API ?? 'http://localhost:8000/');
+	static #root = strip_trailing_slash(envrionment_variable);
 
 	/**
 	 * Internal helper to build absolute HTTP URLs.

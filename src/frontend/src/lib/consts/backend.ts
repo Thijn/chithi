@@ -1,32 +1,32 @@
 import { strip_trailing_slash } from '#functions/urls';
 import { env } from '$env/dynamic/public';
 
-const envrionment_variable = env.PUBLIC_BACKEND_API ?? 'http://localhost:8000';
+const environment_variable = env.PUBLIC_BACKEND_API ?? 'http://localhost:8000';
+const normalized_env = strip_trailing_slash(environment_variable);
 
 /**
  * Single source of truth for the Backend API.
- * Uses the native URL API to handle slashes and protocols safely.
+ * Uses string templates for reliable path joining and the URL API for complex transformations.
  */
 export class Api {
-	static #root = strip_trailing_slash(envrionment_variable);
+	static #root = normalized_env;
 
 	/**
 	 * Internal helper to build absolute HTTP URLs.
 	 */
-	static #url = (path: string) => new URL(path, this.#root).href;
+	static #url = (path: string) => `${this.#root}/${path}`;
 
 	/**
 	 * Internal helper to build absolute WebSocket URLs.
 	 */
 	static #ws = (path: string) => {
-		const ws = new URL(path, this.#root);
-		ws.protocol = this.#root.protocol === 'https:' ? 'wss:' : 'ws:';
-		return ws;
+		const url = this.#url(path).replace(/^http/, 'ws');
+		return new URL(url);
 	};
 
 	// --- Core Routes ---
 	static get BASE() {
-		return this.#root.href;
+		return this.#root;
 	}
 	static get LOGIN() {
 		return this.#url('login');

@@ -28,7 +28,7 @@ If you have a vision for this project, i am looking for you. Feel free to drop a
 
 ## Contributing
 
-Contributions are welcome. Please open issues for bugs or feature requests, and open pull requests for proposed fixes. Follow existing code style and tests where applicable.
+Contributions are welcome. Please open issues for bugs or feature requests, and open pull requests for proposed fixes. Follow existing code style where applicable.
 
 
 ## Contact

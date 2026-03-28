@@ -1,21 +1,19 @@
+from typing import TYPE_CHECKING
+
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect
 
-from app.states.app import AppState
-
+if TYPE_CHECKING:
+    from app.managers.websocket import WebSocketManager
 router = APIRouter()
 
 
 @router.websocket("/ws/state")
 async def state_ws(ws: WebSocket):
-    manager = ws.app.state.ws_manager
+    manager: WebSocketManager = ws.app.state.ws_manager
 
-    await manager.connect(ws)
     try:
-        # Send current state snapshot on connect
-        current = await AppState.get()
-        await ws.send_text(current.model_dump_json())
-
-        # Keep the connection alive - read (and discard) client pings/messages
+        await manager.connect(ws)
+        # Keep the connection alive
         while True:
             await ws.receive_text()
     except WebSocketDisconnect:

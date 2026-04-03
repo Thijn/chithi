@@ -1,27 +1,43 @@
 <script lang="ts">
 	import * as Sidebar from '$lib/components/ui/sidebar/index';
+	import * as Breadcrumb from '$lib/components/ui/breadcrumb/index';
 	import { Separator } from '$lib/components/ui/separator/index';
 	import AppSidebar from './app-sidebar.svelte';
+	import { page } from '$app/state';
 
 	let { children } = $props();
+
+	const breadcrumbMap: Record<string, string> = {
+		'/admin/user': 'Profile',
+		'/admin/config': 'Config',
+		'/admin/urls': 'Outstanding Urls'
+	};
 </script>
 
 <Sidebar.Provider>
 	<AppSidebar />
-	<Sidebar.Inset class="flex flex-col">
+	<Sidebar.Inset>
 		<header
-			class="sticky top-0 z-10 flex h-16 shrink-0 items-center gap-2 border-b bg-background/80 px-4 backdrop-blur-md"
+			class="flex h-16 shrink-0 items-center gap-2 transition-[width,height,ease] group-has-data-[collapsible=icon]/sidebar-wrapper:h-12"
 		>
-			<Sidebar.Trigger class="-ml-1" />
-			<Separator orientation="vertical" class="mr-2 h-4" />
-			<div class="flex items-center gap-2 px-2 text-sm font-medium text-muted-foreground">
-				<span>Admin Panel</span>
+			<div class="flex items-center gap-2 px-4">
+				<Sidebar.Trigger class="-ml-1" />
+				<Separator orientation="vertical" class="mr-2 h-4" />
+				<Breadcrumb.Root>
+					<Breadcrumb.List>
+						<Breadcrumb.Item class="hidden md:block">
+							<Breadcrumb.Link href="/admin/user">Admin</Breadcrumb.Link>
+						</Breadcrumb.Item>
+						<Breadcrumb.Separator class="hidden md:block" />
+						<Breadcrumb.Item>
+							<Breadcrumb.Page>{breadcrumbMap[page.url.pathname] || 'Dashboard'}</Breadcrumb.Page>
+						</Breadcrumb.Item>
+					</Breadcrumb.List>
+				</Breadcrumb.Root>
 			</div>
 		</header>
-		<main class="flex-1 overflow-auto p-6">
-			<div class="w-full max-w-none">
-				{@render children?.()}
-			</div>
-		</main>
+		<div class="flex flex-1 flex-col gap-4 p-4 pt-0">
+			{@render children?.()}
+		</div>
 	</Sidebar.Inset>
 </Sidebar.Provider>

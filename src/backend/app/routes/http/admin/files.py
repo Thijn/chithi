@@ -1,34 +1,29 @@
 from datetime import datetime, timedelta, timezone
 from http import HTTPStatus
-from uuid import UUID
 
 from fastapi import APIRouter, BackgroundTasks, HTTPException
-from sqlmodel import func, select
+from sqlmodel import col, func, select
 
-from app.deps import CurrentUser, SessionDep
+from app.deps import CurrentUser, PaginationDep, SessionDep
 from app.models.files import (
     File,
+    FileInformationOut,
     FileOut,
-    PaginatedFileInformationOut,
 )
+from app.pagination import Page, paginate
 from app.tasks import delete_expired_file
 
 router = APIRouter()
 
 
-@router.get("/files", response_model=PaginatedFileInformationOut)
+@router.get("/files", response_model=Page[FileInformationOut])
 async def show_all_files(
     _: CurrentUser,  # Only check for login here
     session: SessionDep,
-    cursor: UUID | None = None,
-    limit: int = 100,
+    pagination: PaginationDep,
 ):
     now = datetime.now(timezone.utc)
     soon = now + timedelta(days=1)
-
-    # Total count
-    count_query = select(func.count()).select_from(File)
-    total = (await session.exec(count_query)).one()
 
     # Total bytes
     sum_bytes_query = select(func.coalesce(func.sum(File.size), 0)).select_from(File)
@@ -70,27 +65,17 @@ async def show_all_files(
     )
     latest_expiry = (await session.exec(latest_expiry_query)).one()
 
-    # Paginated items
-    query = select(File).order_by(File.id.desc()).limit(limit)  # type: ignore
-    if cursor:
-        query = query.where(File.id < cursor)
+    meta = {
+        "total_bytes": total_bytes,
+        "active_urls": active_urls,
+        "links_with_download_caps": links_with_download_caps,
+        "expiring_soon": expiring_soon,
+    }
+    if latest_expiry:
+        meta["latest_expiry"] = int(latest_expiry.timestamp())
 
-    result = await session.exec(query)
-    file_objects = result.all()
-
-    next_cursor = file_objects[-1].id if len(file_objects) == limit else None
-
-    return PaginatedFileInformationOut(
-        items=file_objects,
-        total=total,
-        next_cursor=next_cursor,
-        limit=limit,
-        total_bytes=total_bytes,
-        active_urls=active_urls,
-        links_with_download_caps=links_with_download_caps,
-        expiring_soon=expiring_soon,
-        latest_expiry=latest_expiry,
-        has_indefinite_active_urls=False,
+    return await paginate(
+        select(File).order_by(col(File.id).desc()), session, pagination, meta=meta
     )
 
 

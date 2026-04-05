@@ -7,26 +7,37 @@ export type FileInfo = {
 	folder_name?: string;
 	size?: number;
 	created_at: string;
-	expires_at?: string | null;
+	expires_at?: string;
 	expire_after_n_download?: number;
 	download_count?: number;
 };
 
-export type FilesWithStats = {
-	files: FileInfo[];
-	total_urls: number;
-	total_size: number;
+export type PaginatedFiles = {
+	items: FileInfo[];
+	total: number;
+	next_cursor: string | null;
+	limit: number;
+	total_bytes: number;
+	active_urls: number;
 	links_with_download_caps: number;
-	max_expires_at?: string | null;
-	longest_expiry_file?: FileInfo | null;
+	expiring_soon: number;
+	latest_expiry?: string;
+	has_indefinite_active_urls: boolean;
 };
 
-export const useFilesQuery = () => {
+export const useFilesQuery = (cursor: () => string | null = () => null, limit: number = 100) => {
 	const queryClient = useQueryClient();
 	const query = createQuery(() => ({
-		queryKey: ['admin-files'],
+		queryKey: ['admin-files', cursor(), limit],
 		queryFn: async () => {
-			const res = await fetch(Api.ADMIN.FILES, {
+			const url = new URL(Api.ADMIN.FILES, window.location.origin);
+			const currentCursor = cursor();
+			if (currentCursor) {
+				url.searchParams.set('cursor', currentCursor);
+			}
+			url.searchParams.set('limit', limit.toString());
+
+			const res = await fetch(url.toString(), {
 				credentials: 'include'
 			});
 
@@ -36,10 +47,7 @@ export const useFilesQuery = () => {
 				}
 				throw new Error(`Failed to fetch files: ${res.statusText}`);
 			}
-
-			const json = await res.json();
-
-			return json as FilesWithStats;
+			return res.json() as Promise<PaginatedFiles>;
 		},
 		refetchInterval: 1000, // 1 second
 		retry: true

@@ -8,14 +8,6 @@ from sqlalchemy.engine import Connection
 from sqlalchemy.orm import Mapper
 from sqlmodel import Field, SQLModel
 
-class FilesWithStats(SQLModel):
-    files: list[FileInformationOut]
-    total_urls: int
-    total_size: int
-    links_with_download_caps: int
-    max_expires_at: datetime | None
-    longest_expiry_file: FileInformationOut | None
-
 
 class FileInformationOut(SQLModel):
     id: UUID
@@ -29,6 +21,17 @@ class FileInformationOut(SQLModel):
     expire_after_n_download: int
 
 
+class PaginatedFileInformationOut(SQLModel):
+    items: list[FileInformationOut]
+    total: int
+    next_cursor: UUID | None
+    limit: int
+    total_bytes: int
+    active_urls: int
+    links_with_download_caps: int
+    expiring_soon: int
+    latest_expiry: datetime | None
+    has_indefinite_active_urls: bool
 
 
 class FileOut(SQLModel):

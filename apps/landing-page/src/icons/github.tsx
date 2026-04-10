@@ -1,3 +1,5 @@
+'use client';
+
 import { forwardRef, SVGProps } from 'react';
 
 export interface LucideIconProps extends SVGProps<SVGSVGElement> {

@@ -33,12 +33,12 @@ export default async function RootLayout({
     children: React.ReactNode;
 }>) {
     return (
-        <html lang="en">
+        <html lang="en" data-theme="cerberus" className="dark">
             <head>
                 <link rel="icon" href="/favicon.svg" />
             </head>
             <body
-                className={`${inter.variable} ${jetbrainsMono.variable} antialiased`}
+                className={`${inter.variable} ${jetbrainsMono.variable} bg-surface-50-950 text-surface-950-50 antialiased selection:bg-primary-500 selection:text-white`}
             >
                 <StyledJsxRegistry>
                     <Providers>{children}</Providers>

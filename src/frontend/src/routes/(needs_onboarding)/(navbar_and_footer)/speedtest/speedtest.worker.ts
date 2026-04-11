@@ -1,183 +1,182 @@
-self.onmessage = async (e: MessageEvent) => {
-	const { type, baseUrl, duration = 10 } = e.data;
-	if (type === 'start') {
-		try {
-			await runSpeedTest(baseUrl, duration);
-		} catch (err: unknown) {
-			const errorMessage = err instanceof Error ? err.message : String(err);
-			self.postMessage({ type: 'error', error: errorMessage });
-		}
-	}
+const sleep = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));
+const getElapsedSeconds = (startTime: number) => (performance.now() - startTime) / 1_000;
+const getMbps = (bytes: number, seconds: number) => (bytes * 8) / seconds / 1_000_000;
+const reportProgress = (
+	phase: 'latency' | 'download' | 'upload',
+	value: number,
+	progress: number
+) => {
+	self.postMessage({ type: 'progress', phase, speed: value, progress });
 };
 
-async function runSpeedTest(baseUrl: string, duration: number) {
-	//  DOWNLOAD
+let endpoints: { DOWNLOAD: string; UPLOAD: string; LATENCY: string } | null = null;
+
+self.addEventListener('message', async ({ data }: MessageEvent) => {
+	const { type, duration = 10, urls } = data as { type: string; duration?: number; urls?: { DOWNLOAD: string; UPLOAD: string; LATENCY: string } };
+	if (type !== 'start' || !urls) return;
+
+	endpoints = urls;
+
+	try {
+		await runSpeedTest(duration);
+	} catch (err: unknown) {
+		const errorMessage = err instanceof Error ? err.message : String(err);
+		self.postMessage({ type: 'error', error: errorMessage });
+	}
+});
+
+const runSpeedTest = async (duration: number) => {
+	self.postMessage({ type: 'phase', phase: 'latency' });
+	const latency = await testLatency();
+	self.postMessage({ type: 'result', key: 'latency', value: latency });
+
+	await sleep(500);
+
 	self.postMessage({ type: 'phase', phase: 'download' });
-	const downloadSpeed = await testDownload(baseUrl, duration);
+	const downloadSpeed = await testDownload(duration);
 	self.postMessage({ type: 'result', key: 'download', value: downloadSpeed });
 
-	// Short pause
-	await new Promise((resolve) => setTimeout(resolve, 1000));
+	await sleep(1_000);
 
-	//  UPLOAD
 	self.postMessage({ type: 'phase', phase: 'upload' });
-	const uploadSpeed = await testUpload(baseUrl, duration);
+	const uploadSpeed = await testUpload(duration);
 	self.postMessage({ type: 'result', key: 'upload', value: uploadSpeed });
 
 	self.postMessage({ type: 'finish' });
-}
+};
 
-async function testDownload(baseUrl: string, duration: number): Promise<number> {
-	// 50MB chunk size request
-	const size = 50 * 1024 * 1024;
-	const endpoint = `${baseUrl}/speedtest/download?bytes=${size}`;
+const testLatency = async (): Promise<number> => {
+	const pings = 5;
+	let totalLatency = 0;
 
-	let totalLoaded = 0;
+	for (let i = 0; i < pings; i++) {
+		const start = performance.now();
+		try {
+			await fetch(endpoints!.LATENCY, {
+				cache: 'no-store'
+			});
+		} catch (e) {
+			/* ignore errors for individual pings */
+		}
+		const elapsed = performance.now() - start;
+		totalLatency += elapsed;
+		reportProgress('latency', elapsed, (i + 1) / pings);
+		await sleep(50);
+	}
+
+	const finalLatency = totalLatency / pings;
+	reportProgress('latency', finalLatency, 1);
+	return finalLatency;
+};
+
+const testDownload = async (duration: number): Promise<number> => {
+	const size = 50 << 20;
+	const endpoint = new URL(endpoints!.DOWNLOAD);
+	endpoint.searchParams.set('bytes', size.toString());
+
+	let totalBytes = 0;
 	const startTime = performance.now();
-	let lastUpdate = startTime;
+	let lastReport = startTime;
 
-	// Loop until duration passed
-	while ((performance.now() - startTime) / 1000 < duration) {
-		const controller = new AbortController();
-		const signal = controller.signal;
+	while (getElapsedSeconds(startTime) < duration) {
+		const remainingMs = Math.max(0, duration * 1_000 - (performance.now() - startTime));
+		const signal = AbortSignal.timeout(remainingMs);
 
 		try {
 			const response = await fetch(endpoint, { signal });
 			if (!response.body) throw new Error('No response body');
 
 			const reader = response.body.getReader();
-
 			while (true) {
 				const { done, value } = await reader.read();
-				if (done) break;
+				if (done || !value) break;
 
-				totalLoaded += value.length;
-				const now = performance.now();
-				const elapsedTotal = (now - startTime) / 1000;
+				totalBytes += value.length;
+				const elapsed = getElapsedSeconds(startTime);
 
-				// Check time limit
-				if (elapsedTotal >= duration) {
+				if (elapsed >= duration) {
 					await reader.cancel();
-					controller.abort();
 					break;
 				}
 
-				// Update progress every 100ms
-				if (now - lastUpdate > 100) {
-					if (elapsedTotal > 0) {
-						const avgBps = (totalLoaded * 8) / elapsedTotal;
-						const avgMbps = avgBps / 1_000_000;
-
-						self.postMessage({
-							type: 'progress',
-							phase: 'download',
-							speed: avgMbps,
-							progress: Math.min(elapsedTotal / duration, 1)
-						});
-					}
-					lastUpdate = now;
+				if (performance.now() - lastReport > 100) {
+					reportProgress('download', getMbps(totalBytes, elapsed), Math.min(elapsed / duration, 1));
+					lastReport = performance.now();
 				}
 			}
-		} catch (e) {
-			// Ignore abort errors
-			if (e instanceof Error && e.name !== 'AbortError') {
-				// console.error(e);
+		} catch (err: unknown) {
+			if (err instanceof Error && err.name !== 'AbortError') {
+				throw err;
 			}
 		}
 	}
 
-	const finalDuration = (performance.now() - startTime) / 1000;
-	// Calculate final speed
-	const finalBps = (totalLoaded * 8) / finalDuration;
-	const finalMbps = finalBps / 1_000_000;
+	const finalElapsed = Math.max(getElapsedSeconds(startTime), 0.001);
+	const finalSpeed = getMbps(totalBytes, finalElapsed);
+	reportProgress('download', finalSpeed, 1);
 
-	// Final update
-	self.postMessage({
-		type: 'progress',
-		phase: 'download',
-		speed: finalMbps,
-		progress: 1
-	});
+	return finalSpeed;
+};
 
-	return finalMbps;
-}
+const testUpload = async (duration: number): Promise<number> => {
+	const size = 20 << 20;
+	const data = crypto.getRandomValues(new Uint8Array(size));
 
-async function testUpload(baseUrl: string, duration: number): Promise<number> {
-	const size = 20 * 1024 * 1024; // 20MB chunks
-	const data = new Uint8Array(size);
-	// Fill slightly to avoid compression optimization
-	for (let i = 0; i < 1024; i++) data[i] = i % 255;
-
-	let totalLoaded = 0;
+	let totalBytes = 0;
 	const startTime = performance.now();
-	let lastUpdate = startTime;
 
-	while ((performance.now() - startTime) / 1000 < duration) {
-		await new Promise<void>((resolve, reject) => {
-			const xhr = new XMLHttpRequest();
-			xhr.open('POST', `${baseUrl}/speedtest/upload`);
+	while (getElapsedSeconds(startTime) < duration) {
+		let uploadedBytes = 0;
+		const remainingMs = Math.max(0, duration * 1_000 - (performance.now() - startTime));
+		const signal = AbortSignal.timeout(remainingMs);
 
-			let currentRequestLoaded = 0;
-
-			xhr.upload.onprogress = (e) => {
-				if (e.lengthComputable) {
-					const now = performance.now();
-					currentRequestLoaded = e.loaded;
-
-					const elapsedTotal = (now - startTime) / 1000;
-
-					if (elapsedTotal >= duration) {
-						xhr.abort();
-						return;
-					}
-
-					if (now - lastUpdate > 100) {
-						if (elapsedTotal > 0) {
-							const currentTotal = totalLoaded + e.loaded;
-							const avgBps = (currentTotal * 8) / elapsedTotal;
-							const avgMbps = avgBps / 1_000_000;
-
-							self.postMessage({
-								type: 'progress',
-								phase: 'upload',
-								speed: avgMbps,
-								progress: Math.min(elapsedTotal / duration, 1)
-							});
-						}
-						lastUpdate = now;
-					}
+		const stream = new ReadableStream<Uint8Array>({
+			pull(controller) {
+				if (uploadedBytes >= size) {
+					controller.close();
+					return;
 				}
-			};
 
-			xhr.onload = () => {
-				totalLoaded += size; // Add full size
-				resolve();
-			};
-
-			xhr.onerror = () => {
-				reject(new Error('Upload failed'));
-			};
-
-			xhr.onabort = () => {
-				totalLoaded += currentRequestLoaded;
-				resolve();
-			};
-
-			xhr.send(data);
+				const chunkSize = 256 << 10;
+				const next = Math.min(uploadedBytes + chunkSize, size);
+				controller.enqueue(data.subarray(uploadedBytes, next));
+				uploadedBytes = next;
+			},
+			cancel() {
+				/* no-op */
+			}
 		});
+
+		const progressTimer = setInterval(() => {
+			const elapsed = getElapsedSeconds(startTime);
+			if (elapsed <= 0) return;
+			reportProgress(
+				'upload',
+				getMbps(totalBytes + uploadedBytes, elapsed),
+				Math.min(elapsed / duration, 1)
+			);
+		}, 100);
+
+		try {
+			await fetch(endpoints!.UPLOAD, {
+				method: 'POST',
+				body: stream,
+				signal
+			});
+			totalBytes += uploadedBytes;
+		} catch (error: unknown) {
+			if (error instanceof Error && error.name !== 'AbortError') {
+				throw error;
+			}
+			totalBytes += uploadedBytes;
+		} finally {
+			clearInterval(progressTimer);
+		}
 	}
 
-	const finalDuration = (performance.now() - startTime) / 1000;
-	const finalBps = (totalLoaded * 8) / finalDuration;
-	const finalMbps = finalBps / 1_000_000;
+	const finalElapsed = Math.max(getElapsedSeconds(startTime), 0.001);
+	const finalSpeed = getMbps(totalBytes, finalElapsed);
+	reportProgress('upload', finalSpeed, 1);
 
-	// Final update
-	self.postMessage({
-		type: 'progress',
-		phase: 'upload',
-		speed: finalMbps,
-		progress: 1
-	});
-
-	return finalMbps;
-}
+	return finalSpeed;
+};

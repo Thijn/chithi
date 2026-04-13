@@ -48,6 +48,11 @@ Copyright &copy; 2026 The chithi authors
 # Read more: https://zensical.org/docs/setup/navigation/
 nav = [
     { "Introduction" = 'index.md' },
+    { "Guides" = [
+        { 'CLI' = [
+            { "Upload" = "guides/cli/upload.md" },
+        ] },
+    ] },
     { "Architecture" = "architecture.md" },
     { "Deployments" = [
         { "Docker" = [
@@ -355,3 +360,10 @@ repo = "fontawesome/brands/github"
 
 [project.extra]
 alternate = [{ name = "English", link = "/en/", lang = "en" }]
+
+
+[project.markdown_extensions.termynal]
+include_assets = true
+title = "bash"
+buttons = "macos"
+prompt_literal_start = ["$"]

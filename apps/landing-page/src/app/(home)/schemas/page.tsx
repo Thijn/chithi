@@ -1,11 +1,11 @@
 import Link from 'next/link';
-import { SiGithub, SiSwagger } from '@icons-pack/react-simple-icons';
+import { SiScalar, SiSwagger } from '@icons-pack/react-simple-icons';
 
 const SCHEMA_OPTIONS = [
     {
         id: 'scalar',
         href: '/schemas/scalar',
-        icon: SiGithub,
+        icon: SiScalar,
         name: 'Scalar',
         desc: 'Modern, performant, and beautifully designed API documentation.',
         colorClass: 'bg-primary-500',

@@ -1,4 +1,24 @@
 import Link from 'next/link';
+import { SiGithub, SiSwagger } from '@icons-pack/react-simple-icons';
+
+const SCHEMA_OPTIONS = [
+    {
+        id: 'scalar',
+        href: '/schemas/scalar',
+        icon: SiGithub,
+        name: 'Scalar',
+        desc: 'Modern, performant, and beautifully designed API documentation.',
+        colorClass: 'bg-primary-500',
+    },
+    {
+        id: 'swagger',
+        href: '/schemas/swaggar',
+        icon: SiSwagger,
+        name: 'Swagger',
+        desc: 'The industry-standard classic interactive OpenAPI interface.',
+        colorClass: 'bg-secondary-500',
+    },
+];
 
 export default function SchemasPage() {
     return (
@@ -9,32 +29,23 @@ export default function SchemasPage() {
                 specification.
             </p>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8 w-full max-w-4xl">
-                <Link
-                    href="/schemas/scalar"
-                    className="card p-8 bg-surface-100-900 border border-surface-200-800 rounded-container flex flex-col items-center text-center transition-transform hover:scale-105 cursor-pointer shadow-sm min-h-62.5 justify-center"
-                >
-                    <div className="bg-primary-500 rounded-full w-14 h-14 flex items-center justify-center text-white mb-6 text-xl font-bold">
-                        Sc
-                    </div>
-                    <h2 className="h2 mb-4">Scalar</h2>
-                    <p className="text-surface-600-400 text-sm">
-                        Modern, performant, and beautifully designed API
-                        documentation.
-                    </p>
-                </Link>
-                <Link
-                    href="/schemas/swaggar"
-                    className="card p-8 bg-surface-100-900 border border-surface-200-800 rounded-container flex flex-col items-center text-center transition-transform hover:scale-105 cursor-pointer shadow-sm min-h-62.5 justify-center"
-                >
-                    <div className="bg-secondary-500 rounded-full w-14 h-14 flex items-center justify-center text-white mb-6 text-xl font-bold">
-                        Sw
-                    </div>
-                    <h2 className="h2 mb-4">Swagger</h2>
-                    <p className="text-surface-600-400 text-sm">
-                        The industry-standard classic interactive OpenAPI
-                        interface.
-                    </p>
-                </Link>
+                {SCHEMA_OPTIONS.map((schema) => (
+                    <Link
+                        key={schema.id}
+                        href={schema.href}
+                        className="card p-8 bg-surface-100-900 border border-surface-200-800 rounded-container flex flex-col items-center text-center transition-transform hover:scale-105 cursor-pointer shadow-sm min-h-62.5 justify-center"
+                    >
+                        <div
+                            className={`${schema.colorClass} rounded-full w-14 h-14 flex items-center justify-center text-white mb-6`}
+                        >
+                            <schema.icon className="w-8 h-8 fill-current" />
+                        </div>
+                        <h2 className="h2 mb-4">{schema.name}</h2>
+                        <p className="text-surface-600-400 text-sm">
+                            {schema.desc}
+                        </p>
+                    </Link>
+                ))}
             </div>
         </div>
     );

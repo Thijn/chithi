@@ -20,6 +20,7 @@ router = APIRouter()
     "/login",
     dependencies=[
         Depends(get_rate_limiter(Rate(3, Duration.SECOND * 1))),
+        Depends(get_rate_limiter(Rate(60, Duration.MINUTE * 1))),
     ],
 )
 async def login_endpoint(

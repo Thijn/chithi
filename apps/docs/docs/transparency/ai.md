@@ -2,7 +2,7 @@
 icon: lucide/bot
 ---
 
-The project was not made with AI(or at least entirely).
+The project was not made with AI (or at least entirely).
 
 ## Backend
 
@@ -20,4 +20,4 @@ I reviewed [one PR](https://github.com/chithi-dev/chithi/pull/39) with github co
 
 ## Docs
 
-The mermaid.js diagrams were written with AI assistance.
+The mermaid.js diagrams were written with AI assistance (then verified by me).

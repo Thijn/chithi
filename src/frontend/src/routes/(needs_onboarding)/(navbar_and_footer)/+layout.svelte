@@ -188,7 +188,7 @@
 {/snippet}
 
 <div
-	class="relative flex min-h-svh min-w-screen flex-col overflow-hidden bg-background text-foreground"
+	class="relative flex min-h-svh w-full flex-col overflow-hidden bg-background text-foreground"
 >
 	<!-- Top Bar -->
 	<header
